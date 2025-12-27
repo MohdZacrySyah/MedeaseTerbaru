@@ -1,5 +1,6 @@
 @php
-    $layout = (Auth::guard('tenaga_medis')->check()) ? 'layouts.tenaga_medis' : 'layouts.main';
+    // PERBAIKAN: Gunakan variabel $myRole dari Controller, jangan cek Auth lagi agar konsisten
+    $layout = ($myRole === 'medis') ? 'layouts.tenaga_medis' : 'layouts.main';
 @endphp
 
 @extends($layout)
@@ -1051,107 +1052,53 @@
     <div class="app-container" id="appContainer">
         
         <div class="sidebar-area">
-            <div class="sidebar-header">
-                <h3>
-                    <i class="fas fa-comments"></i>
-                    Chat Konsultasi
-                </h3>
-                <div class="header-actions">
-                    <button class="header-btn" title="Refresh" onclick="loadContacts()">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                </div>
+            <div class="sidebar-header" style="padding:16px; background:linear-gradient(135deg, #39A616, #1D8208); color:white; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; font-size:1.2rem;"><i class="fas fa-comments"></i> Chat Konsultasi</h3>
+                <button class="header-btn" title="Refresh" onclick="loadContacts()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:50%; width:36px; height:36px; cursor:pointer;"><i class="fas fa-sync-alt"></i></button>
             </div>
 
-            <div class="search-container">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="contactSearch" 
-                           placeholder="{{ Auth::guard('tenaga_medis')->check() ? 'Cari atau mulai chat baru...' : 'Cari dokter...' }}">
-                </div>
-                <div id="searchResults"></div>
+            <div class="search-container" style="padding:10px;">
+                <input type="text" id="contactSearch" placeholder="{{ $myRole === 'medis' ? 'Cari Pasien...' : 'Cari Dokter...' }}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                <div id="searchResults" style="display:none; background:white; border:1px solid #eee; margin-top:5px;"></div>
             </div>
 
-            <div class="contact-list" id="contactList">
-                <div class="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p style="margin-top: 10px; font-size: 13px;">Memuat percakapan...</p>
-                </div>
+            <div class="contact-list" id="contactList" style="flex:1; overflow-y:auto;">
+                <div class="loading-state" style="padding:20px; text-align:center; color:#999;">Memuat percakapan...</div>
             </div>
         </div>
 
         <div class="chat-area" id="chatArea">
-            
-            <div id="emptyState" class="empty-state">
-                <i class="fas fa-comment-medical empty-state-icon"></i>
+            <div id="emptyState" class="empty-state" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#888;">
+                <i class="fas fa-comment-medical" style="font-size:60px; margin-bottom:20px; color:#39A616;"></i>
                 <h2>MedEase Chat</h2>
-                <p>Kirim dan terima pesan konsultasi kesehatan secara real-time.<br>Pilih kontak untuk memulai percakapan.</p>
-                
-                <div class="empty-state-features">
-                    <div class="feature-item">
-                        <i class="fas fa-lock"></i>
-                        <span>Encrypted</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-image"></i>
-                        <span>Kirim Gambar</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="fas fa-bolt"></i>
-                        <span>Real-time</span>
-                    </div>
-                </div>
+                <p>Pilih kontak untuk memulai percakapan.</p>
             </div>
 
             <div id="activeChatView" style="display: none; flex-direction: column; height: 100%;">
-                
-                <div class="chat-header">
-                    <i class="fas fa-arrow-left btn-back" onclick="closeChat()"></i>
-                    <img src="" alt="" class="chat-header-avatar" id="headerAvatar">
+                <div class="chat-header" style="height:65px; background:linear-gradient(135deg, #39A616, #1D8208); padding:0 20px; display:flex; align-items:center; color:white;">
+                    <i class="fas fa-arrow-left btn-back" onclick="closeChat()" style="margin-right:15px; cursor:pointer;"></i>
+                    <img src="" alt="" class="chat-header-avatar" id="headerAvatar" style="width:40px; height:40px; border-radius:50%; margin-right:10px; background:#fff;">
                     <div class="chat-header-info">
-                        <h4 id="headerName">Nama Pengguna</h4>
-                        
-                    </div>
-                    <div class="chat-header-actions">
-                        <button class="chat-action-btn" title="Info">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
+                        <h4 id="headerName" style="margin:0; font-size:16px;">User</h4>
                     </div>
                 </div>
 
-                <div class="messages-container" id="messagesContainer">
-                </div>
+                <div class="messages-container" id="messagesContainer" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px;"></div>
 
-                <div id="mediaPreview" class="media-preview-container">
-                    <div class="media-preview-box">
-                        <img id="previewImage" src="" alt="Preview">
-                        <button class="btn-close-preview" onclick="clearMedia()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="preview-label">
-                        <i class="fas fa-check-circle"></i>
-                        Gambar siap dikirim
+                <div id="mediaPreview" class="media-preview-container" style="display:none; padding:10px; background:#f0f0f0; border-top:2px solid #39A616;">
+                    <div style="position:relative; display:inline-block;">
+                        <img id="previewImage" src="" style="height:100px; border-radius:8px;">
+                        <button onclick="clearMedia()" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer;">&times;</button>
                     </div>
                 </div>
 
-                <form id="chatForm" class="chat-footer">
+                <form id="chatForm" class="chat-footer" style="padding:10px; background:#fff; display:flex; align-items:center; gap:10px;">
                     @csrf
                     <input type="file" id="mediaInput" name="media" accept="image/*" style="display: none;" onchange="handleFileSelect(this)">
-                    
-                    <button type="button" class="footer-btn" onclick="document.getElementById('mediaInput').click()" title="Kirim Foto">
-                        <i class="fas fa-camera"></i>
-                    </button>
-
-                    <div class="input-wrapper">
-                        <input type="text" id="messageInput" placeholder="Ketik pesan..." autocomplete="off">
-                    </div>
-
-                    <button type="submit" class="btn-send" id="btnSend">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+                    <button type="button" onclick="document.getElementById('mediaInput').click()" style="background:none; border:none; font-size:20px; color:#666; cursor:pointer;"><i class="fas fa-camera"></i></button>
+                    <input type="text" id="messageInput" placeholder="Ketik pesan..." autocomplete="off" style="flex:1; padding:10px; border-radius:20px; border:1px solid #ddd;">
+                    <button type="submit" id="btnSend" style="background:#39A616; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
                 </form>
-
             </div>
         </div>
     </div>
@@ -1162,162 +1109,122 @@
 <script>
     let activePartnerId = null;
     let lastMessageId = 0;
-    const isDoctor = {{ Auth::guard('tenaga_medis')->check() ? 'true' : 'false' }};
+    const isDoctor = {{ $myRole === 'medis' ? 'true' : 'false' }};
     const csrfToken = '{{ csrf_token() }}';
     let pollingInterval = null;
-    let messageIds = new Set(); // PENTING: Track ID untuk prevent duplicate
+    let messageIds = new Set(); 
+
+    // 🔥 URL DINAMIS BERDASARKAN PREFIX 🔥
+    const urls = {
+        contacts: "{{ route($routePrefix . 'contacts') }}",
+        search: "{{ $myRole === 'medis' ? route($routePrefix . 'search') : '' }}",
+        messages: "{{ url($myRole === 'medis' ? 'tenaga-medis/chat/messages' : 'chat/messages') }}", 
+        send: "{{ route($routePrefix . 'send') }}"
+    };
 
     function loadContacts() {
-        fetch("{{ route('chat.contacts') }}")
+        fetch(urls.contacts)
             .then(res => res.json())
             .then(data => {
                 const list = document.getElementById('contactList');
                 list.innerHTML = ''; 
                 if(data.length === 0) {
-                    const msg = isDoctor ? 'Belum ada pesan. Cari pasien untuk memulai.' : 'Belum ada dokter.';
-                    list.innerHTML = `<div style="padding:40px 20px; text-align:center; color:var(--text-secondary);">
-                        <i class="fas fa-inbox" style="font-size:48px; margin-bottom:12px; opacity:0.3;"></i>
-                        <p style="font-weight:500;">${msg}</p>
-                    </div>`;
+                    const msg = isDoctor ? 'Belum ada pesan. Cari pasien...' : 'Belum ada dokter.';
+                    list.innerHTML = `<div style="padding:40px 20px; text-align:center; color:#999;">${msg}</div>`;
                     return;
                 }
                 data.forEach(c => {
                     const activeClass = (c.id == activePartnerId) ? 'active' : '';
-                    const avatar = c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=39A616&color=fff&bold=true`;
+                    const avatar = c.avatar || `https://ui-avatars.com/api/?name=${c.name}&background=39A616&color=fff`;
                     const time = c.last_time || '';
-                    const lastMsg = c.last_message ? (c.last_message.length > 30 ? c.last_message.substring(0,30)+'...' : c.last_message) : '<i style="font-size:11px; color:#aaa;">Mulai obrolan...</i>';
-                    const badge = c.unread > 0 ? `<div class="unread-badge">${c.unread}</div>` : '';
-                    const statusIndicator = c.is_online ? '<div class="status-indicator"></div>' : '';
-                    const html = `<div class="contact-item ${activeClass}" onclick="openChat(${c.id}, '${escapeHtml(c.name)}', '${avatar}')"><div class="contact-avatar"><img src="${avatar}" alt="${escapeHtml(c.name)}">${statusIndicator}</div><div class="contact-info"><div class="contact-top"><span class="contact-name">${escapeHtml(c.name)}</span><span class="contact-time">${time}</span></div><div class="contact-bottom"><span class="last-message">${lastMsg}</span>${badge}</div></div></div>`;
-                    list.innerHTML += html;
+                    const lastMsg = c.last_message || '...';
+                    const badge = c.unread > 0 ? `<div class="unread-badge" style="background:red; color:white; border-radius:10px; padding:2px 6px; font-size:10px;">${c.unread}</div>` : '';
+                    
+                    // Simple template
+                    list.innerHTML += `
+                    <div class="contact-item ${activeClass}" onclick="openChat(${c.id}, '${escapeHtml(c.name)}', '${avatar}')" style="padding:10px; border-bottom:1px solid #eee; cursor:pointer; display:flex; align-items:center;">
+                        <img src="${avatar}" style="width:40px; height:40px; border-radius:50%; margin-right:10px;">
+                        <div style="flex:1;">
+                            <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold;">${escapeHtml(c.name)} <span style="font-weight:normal; font-size:11px; color:#888;">${time}</span></div>
+                            <div style="display:flex; justify-content:space-between; font-size:12px; color:#666;"><span>${lastMsg}</span> ${badge}</div>
+                        </div>
+                    </div>`;
                 });
-            }).catch(err => console.error('Error:', err));
+            });
     }
 
     function openChat(id, name, avatar) {
         if(activePartnerId === id) return;
         activePartnerId = id;
         lastMessageId = 0;
-        messageIds.clear(); // PENTING: Reset tracking
+        messageIds.clear();
         
         document.getElementById('appContainer').classList.add('chat-open');
         document.getElementById('emptyState').style.display = 'none';
         document.getElementById('activeChatView').style.display = 'flex';
         document.getElementById('headerName').innerText = name;
         document.getElementById('headerAvatar').src = avatar;
-        const msgContainer = document.getElementById('messagesContainer');
-        msgContainer.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p style="margin-top:10px; font-size:12px;">Memuat pesan...</p></div>';
+        document.getElementById('messagesContainer').innerHTML = '<div style="text-align:center; padding:20px;">Memuat...</div>';
+        
         fetchMessages(id, true);
-        document.getElementById('searchResults').style.display = 'none';
-        document.getElementById('contactSearch').value = '';
     }
 
     function fetchMessages(partnerId, isInitial = false) {
-        let url = `{{ url('/chat/messages') }}/${partnerId}`;
+        let url = `${urls.messages}/${partnerId}`;
         if (!isInitial) url += `?last_id=${lastMessageId}`;
+        
         fetch(url).then(res => res.json()).then(data => {
-            if(isInitial) { 
-                renderMessagesInitial(data.messages); 
-            } else if (data.messages.length > 0) { 
-                appendMessages(data.messages); 
-            }
-            if (data.messages.length > 0) { 
-                lastMessageId = data.messages[data.messages.length - 1].id; 
-            }
-        }).catch(err => console.error(err));
+            if(isInitial) renderMessagesInitial(data.messages);
+            else if (data.messages.length > 0) appendMessages(data.messages);
+            
+            if (data.messages.length > 0) lastMessageId = data.messages[data.messages.length - 1].id;
+        });
     }
 
     function renderMessagesInitial(messages) {
         const container = document.getElementById('messagesContainer');
-        container.innerHTML = ''; 
-        messageIds.clear(); // PENTING: Clear tracking
-        
-        if (messages.length === 0) {
-            container.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-secondary);"><div style="background:var(--sidebar-bg); display:inline-block; padding:10px 20px; border-radius:10px; font-size:12px; font-weight:500; box-shadow:var(--shadow-sm);"><i class="fas fa-lock" style="color:var(--p1);"></i> Pesan dienkripsi end-to-end</div><p style="margin-top:16px; font-size:13px;">Mulai percakapan dengan mengirim pesan</p></div>`;
-            return;
-        }
-        
-        messages.forEach(msg => { 
-            if (!messageIds.has(msg.id)) { // PENTING: Cek duplicate
-                messageIds.add(msg.id);
-                container.appendChild(createBubble(msg)); 
-            }
-        });
+        container.innerHTML = ''; messageIds.clear();
+        messages.forEach(msg => { if (!messageIds.has(msg.id)) { messageIds.add(msg.id); container.appendChild(createBubble(msg)); } });
         scrollToBottom();
     }
 
     function appendMessages(messages) {
         const container = document.getElementById('messagesContainer');
-        messages.forEach(msg => { 
-            if (!messageIds.has(msg.id)) { // PENTING: Cek duplicate
-                messageIds.add(msg.id);
-                container.appendChild(createBubble(msg)); 
-            }
-        });
-        if(messages.length > 0) {
-            scrollToBottom(true);
-        }
+        messages.forEach(msg => { if (!messageIds.has(msg.id)) { messageIds.add(msg.id); container.appendChild(createBubble(msg)); } });
+        if(messages.length > 0) scrollToBottom(true);
     }
 
     function createBubble(msg) {
         const div = document.createElement('div');
         const isMe = msg.sender === 'me';
-        div.className = `message-bubble ${isMe ? 'msg-me' : 'msg-them'}`;
-        div.setAttribute('data-message-id', msg.id); // PENTING: Attribute tracking
+        div.style.cssText = `max-width:70%; padding:8px 12px; border-radius:8px; font-size:13px; margin-bottom:5px; align-self:${isMe ? 'flex-end' : 'flex-start'}; background:${isMe ? '#d9fdd3' : '#fff'}; box-shadow:0 1px 2px rgba(0,0,0,0.1);`;
         
-        let mediaHtml = '';
-        if (msg.media_path) {
-            const url = `/storage/${msg.media_path}`;
-            if (msg.media_type && msg.media_type.startsWith('image/')) {
-                mediaHtml = `<div class="msg-image"><a href="${url}" target="_blank"><img src="${url}" loading="lazy" alt="Attachment"></a></div>`;
-            } else {
-                mediaHtml = `<div class="msg-file"><a href="${url}" target="_blank" style="color:var(--p1); text-decoration:none;"><i class="fas fa-file-alt"></i> Lampiran</a></div>`;
-            }
-        }
+        let content = '';
+        if (msg.media_path) content += `<div style="margin-bottom:5px;"><a href="/storage/${msg.media_path}" target="_blank">Lihat Media</a></div>`;
+        content += `<div>${escapeHtml(msg.message || '')}</div><div style="text-align:right; font-size:9px; color:#888;">${msg.time}</div>`;
         
-        let ticks = '';
-        if(isMe) { 
-            ticks = msg.is_read ? '<i class="fas fa-check-double tick-read"></i>' : '<i class="fas fa-check tick-sent"></i>'; 
-        }
-        
-        div.innerHTML = `${mediaHtml}${msg.message ? `<span>${escapeHtml(msg.message)}</span>` : ''}<div class="msg-time">${msg.time || ''} ${ticks}</div>`;
-        
-        const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex';
-        wrapper.style.justifyContent = isMe ? 'flex-end' : 'flex-start';
-        wrapper.appendChild(div);
-        return wrapper;
+        div.innerHTML = content;
+        return div;
     }
 
     document.getElementById('chatForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const text = document.getElementById('messageInput').value.trim();
-        const fileInput = document.getElementById('mediaInput');
-        
-        if((!text && fileInput.files.length === 0) || !activePartnerId) return;
-        
+        const file = document.getElementById('mediaInput').files[0];
+        if((!text && !file) || !activePartnerId) return;
+
         const formData = new FormData();
         formData.append('receiver_id', activePartnerId);
         formData.append('_token', csrfToken);
         if(text) formData.append('message', text);
-        if(fileInput.files.length > 0) formData.append('media', fileInput.files[0]);
-        
-        // HAPUS optimistic UI - langsung clear input
+        if(file) formData.append('media', file);
+
         document.getElementById('messageInput').value = '';
         clearMedia();
-        
-        fetch("{{ route('chat.send') }}", { method: 'POST', body: formData })
+
+        fetch(urls.send, { method: 'POST', body: formData })
             .then(res => res.json())
-            .then(data => { 
-                if(data.status === 'success') { 
-                    // PENTING: Delay singkat untuk menghindari race condition
-                    setTimeout(() => {
-                        fetchMessages(activePartnerId); 
-                        loadContacts(); 
-                    }, 150);
-                } 
-            })
-            .catch(err => console.error(err));
+            .then(data => { if(data.success) { setTimeout(() => { fetchMessages(activePartnerId); loadContacts(); }, 200); } });
     });
 
     function handleFileSelect(input) {
@@ -1330,92 +1237,27 @@
             reader.readAsDataURL(input.files[0]);
         }
     }
+    function clearMedia() { document.getElementById('mediaInput').value = ''; document.getElementById('mediaPreview').style.display = 'none'; }
+    function closeChat() { document.getElementById('activeChatView').style.display = 'none'; document.getElementById('emptyState').style.display = 'flex'; activePartnerId = null; }
+    function scrollToBottom(smooth) { const c = document.getElementById('messagesContainer'); c.scrollTop = c.scrollHeight; }
+    function escapeHtml(text) { if(!text) return ''; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
-    function clearMedia() {
-        document.getElementById('mediaInput').value = '';
-        document.getElementById('mediaPreview').style.display = 'none';
-        document.getElementById('previewImage').src = '';
-    }
-
-    const searchInput = document.getElementById('contactSearch');
-    const searchRes = document.getElementById('searchResults');
-    
+    // Search Logic (Only for Doctor)
     if(isDoctor) {
-        searchInput.addEventListener('keyup', function() {
+        document.getElementById('contactSearch').addEventListener('keyup', function() {
             const q = this.value;
-            if(q.length < 2) { searchRes.style.display = 'none'; return; }
-            
-            fetch(`{{ route('chat.search') }}?q=${encodeURIComponent(q)}`)
-                .then(res => res.json())
-                .then(data => {
-                    searchRes.innerHTML = '';
-                    if(data.length > 0) {
-                        searchRes.style.display = 'block';
-                        data.forEach(u => {
-                            const avatar = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=39A616&color=fff&bold=true`;
-                            searchRes.innerHTML += `<div class="search-item" onclick="startNewChat(${u.id}, '${escapeHtml(u.name)}', '${avatar}')"><img src="${avatar}" alt="${escapeHtml(u.name)}"><div class="search-item-info"><div class="search-item-name">${escapeHtml(u.name)}</div><div class="search-item-role">${u.role || 'Pasien'}</div></div></div>`;
-                        });
-                    } else { 
-                        searchRes.style.display = 'none'; 
-                    }
-                })
-                .catch(err => console.error(err));
-        });
-    } else {
-        searchInput.addEventListener('keyup', function() {
-            const filter = this.value.toLowerCase();
-            document.querySelectorAll('.contact-item').forEach(item => {
-                const name = item.querySelector('.contact-name').innerText.toLowerCase();
-                item.style.display = name.includes(filter) ? 'flex' : 'none';
+            if(q.length < 2) { document.getElementById('searchResults').style.display = 'none'; return; }
+            fetch(`${urls.search}?q=${q}`).then(res=>res.json()).then(data => {
+                const resDiv = document.getElementById('searchResults');
+                resDiv.innerHTML = ''; resDiv.style.display = 'block';
+                data.forEach(u => {
+                    resDiv.innerHTML += `<div onclick="openChat(${u.id}, '${escapeHtml(u.name)}', '')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee;">${escapeHtml(u.name)}</div>`;
+                });
             });
         });
     }
 
-    function startNewChat(id, name, avatar) {
-        searchRes.style.display = 'none';
-        searchInput.value = '';
-        openChat(id, name, avatar);
-    }
-
-    function scrollToBottom(smooth = false) {
-        const c = document.getElementById('messagesContainer');
-        if(smooth) c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });
-        else c.scrollTop = c.scrollHeight;
-    }
-
-    function closeChat() {
-        document.getElementById('appContainer').classList.remove('chat-open');
-        document.getElementById('emptyState').style.display = 'flex';
-        document.getElementById('activeChatView').style.display = 'none';
-        activePartnerId = null;
-        messageIds.clear(); // Clear tracking
-    }
-
-    function escapeHtml(text) {
-        if(!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    const btnSend = document.getElementById('btnSend');
-    document.getElementById('messageInput').addEventListener('input', function() {
-        if(this.value.trim().length > 0) btnSend.classList.add('active');
-        else btnSend.classList.remove('active');
-    });
-
     loadContacts();
-    
-    // PENTING: Polling 5 detik (bukan 3 detik)
-    pollingInterval = setInterval(() => {
-        loadContacts();
-        if(activePartnerId) { 
-            fetchMessages(activePartnerId, false); 
-        }
-    }, 5000);
-
-    window.addEventListener('beforeunload', () => {
-        if(pollingInterval) clearInterval(pollingInterval);
-    });
+    pollingInterval = setInterval(() => { loadContacts(); if(activePartnerId) fetchMessages(activePartnerId); }, 5000);
 </script>
 @endpush
