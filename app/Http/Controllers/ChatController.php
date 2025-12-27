@@ -12,39 +12,50 @@ use Illuminate\Support\Facades\Storage;
 class ChatController extends Controller
 {
     /**
+     * Helper untuk menentukan Role berdasarkan Route Name.
+     * Ini metode paling AKURAT untuk membedakan panel.
+     */
+    private function getCurrentRoleInfo()
+    {
+        // Jika Route dimulai dengan 'tenaga-medis.', maka pasti Dokter
+        if (request()->routeIs('tenaga-medis.*')) {
+            return [
+                'role' => 'medis',
+                'type' => 'medis',
+                'route_prefix' => 'tenaga-medis.chat.',
+                'target_type' => 'user' // Lawan bicaranya adalah User
+            ];
+        } 
+        // Jika tidak, maka Pasien
+        else {
+            return [
+                'role' => 'pasien',
+                'type' => 'user',
+                'route_prefix' => 'chat.',
+                'target_type' => 'medis' // Lawan bicaranya adalah Medis
+            ];
+        }
+    }
+
+    /**
      * Menampilkan halaman utama chat.
      */
     public function index()
     {
-        // PENTING: Gunakan request()->user().
-        // Karena route sudah dipisah, ini akan mengembalikan Model User (jika akses route pasien)
-        // atau Model TenagaMedis (jika akses route dokter).
-        $user = request()->user(); 
+        $user = request()->user();
 
         if (!$user) {
             return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu.');
         }
 
-        // Tentukan Role, Type, dan Prefix Route untuk View
-        if ($user instanceof \App\Models\User) {
-            // Jika login sebagai Pasien
-            $myRole = 'pasien';
-            $myType = 'user'; 
-            $routePrefix = 'chat.'; 
-        } else {
-            // Jika login sebagai Tenaga Medis
-            $myRole = 'medis';
-            $myType = 'medis'; 
-            $routePrefix = 'tenaga-medis.chat.'; // Prefix route dokter
-        }
-        
-        $myId = $user->id;
+        // Ambil info role berdasarkan URL/Route
+        $info = $this->getCurrentRoleInfo();
 
         return view('chat.index', [
-            'myRole' => $myRole,
-            'myType' => $myType,
-            'myId' => $myId,
-            'routePrefix' => $routePrefix, // <-- Kirim ke view
+            'myRole' => $info['role'],
+            'myType' => $info['type'],
+            'myId' => $user->id,
+            'routePrefix' => $info['route_prefix'], 
         ]);
     }
 
@@ -56,7 +67,9 @@ class ChatController extends Controller
         $user = request()->user();
         if (!$user) return response()->json([], 401);
 
-        if ($user instanceof \App\Models\User) {
+        $info = $this->getCurrentRoleInfo();
+
+        if ($info['role'] === 'pasien') {
             return $this->getContactsForPatient($user->id);
         } else {
             return $this->getContactsForDoctor($user->id);
@@ -76,6 +89,7 @@ class ChatController extends Controller
     // Logic Kontak Dokter: Hanya Pasien yang pernah chat
     private function getContactsForDoctor($doctorId)
     {
+        // Cari ID user (pasien) yang ada di tabel messages terkait dokter ini
         $senderIds = Message::where('receiver_id', $doctorId)
             ->where('receiver_type', 'medis')
             ->where('sender_type', 'user')
@@ -126,7 +140,7 @@ class ChatController extends Controller
 
         return [
             'id' => $contact->id,
-            'name' => $contact->name ?? $contact->nama,
+            'name' => $contact->name ?? $contact->nama ?? 'Unknown',
             'avatar' => $contact->profile_photo_path ? asset('storage/' . $contact->profile_photo_path) : null,
             'last_message' => $lastMessageText,
             'last_time' => $timeStr,
@@ -162,15 +176,13 @@ class ChatController extends Controller
         $user = request()->user();
         if (!$user) return response()->json([], 401);
 
-        if ($user instanceof \App\Models\User) {
-            $myType = 'user';
-            $targetType = 'medis';
-        } else {
-            $myType = 'medis';
-            $targetType = 'user';
-        }
+        // Ambil info role berdasarkan URL
+        $info = $this->getCurrentRoleInfo();
+        $myType = $info['type'];
+        $targetType = $info['target_type'];
         $myId = $user->id;
 
+        // Update status read
         Message::where('sender_id', $partnerId)
             ->where('sender_type', $targetType)
             ->where('receiver_id', $myId)
@@ -223,13 +235,10 @@ class ChatController extends Controller
         $user = request()->user();
         if (!$user) return response()->json(['status' => 'error'], 401);
 
-        if ($user instanceof \App\Models\User) {
-            $senderType = 'user';
-            $receiverType = 'medis';
-        } else {
-            $senderType = 'medis';
-            $receiverType = 'user';
-        }
+        // Ambil info role berdasarkan URL
+        $info = $this->getCurrentRoleInfo();
+        $senderType = $info['type'];
+        $receiverType = $info['target_type'];
 
         $mediaPath = null;
         $mediaType = null;
@@ -266,13 +275,9 @@ class ChatController extends Controller
         $user = request()->user();
         if (!$user) return response()->json([], 401);
 
-        if ($user instanceof \App\Models\User) {
-            $myType = 'user';
-            $partnerType = 'medis';
-        } else {
-            $myType = 'medis';
-            $partnerType = 'user';
-        }
+        $info = $this->getCurrentRoleInfo();
+        $myType = $info['type'];
+        $partnerType = $info['target_type'];
 
         Message::where('sender_id', $partnerId)
             ->where('sender_type', $partnerType)
