@@ -1,0 +1,2148 @@
+@extends('layouts.admin')
+@section('title', 'Kelola Antrian & Pemeriksaan')
+
+@push('styles')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+@endpush
+
+@section('content')
+
+    {{-- HEADER BANNER --}}
+    <div class="dashboard-header-banner">
+        <div class="header-content">
+            <div class="header-icon">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+            <div class="header-text">
+                <div class="greeting-badge">
+                    <i class="fas fa-desktop"></i>
+                    <span>Admin Console</span>
+                </div>
+                <h1 class="page-title">Kelola Antrian & Data 📋</h1>
+                <p class="page-subtitle">
+                    <i class="far fa-calendar-alt"></i>
+                    Panggil pasien dan input data pemeriksaan awal
+                </p>
+            </div>
+            <div class="hero-illustration">
+                <div class="pulse-circle pulse-1"></div>
+                <div class="pulse-circle pulse-2"></div>
+                <div class="pulse-circle pulse-3"></div>
+                <div class="time-widget">
+                    <i class="fas fa-notes-medical"></i>
+                    <span>Input Data</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- FILTER SECTION --}}
+    <div class="stats-section">
+        <div class="section-header">
+            <h2><i class="fas fa-filter"></i> Filter Data</h2>
+        </div>
+        <div class="filter-card-modern">
+            <form action="{{ route('admin.catatanpemeriksaan') }}" method="GET" class="filter-form-modern">
+                <div class="filter-input-wrapper">
+                    <label for="tanggalFilter" class="filter-label">
+                        <i class="fas fa-calendar-alt"></i> Pilih Tanggal:
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-calendar-day"></i>
+                        <input type="text" name="tanggal" id="tanggalFilter" placeholder="Pilih Tanggal..." value="{{ $tanggal ?? '' }}">
+                    </div>
+                </div>
+                <div class="filter-button-group">
+                    <button type="submit" class="btn-filter-modern btn-primary-filter">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{{ route('admin.catatanpemeriksaan') }}" class="btn-filter-modern btn-secondary-filter">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ALERT SUCCESS --}}
+    @if (session('success'))
+        <div class="alert-success-modern" id="autoHideAlert">
+            <div class="alert-icon"><i class="fas fa-check-circle"></i></div>
+            <span class="alert-text">{{ session('success') }}</span>
+            <button class="alert-close-btn" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        </div>
+    @endif
+
+    {{-- MAIN CONTENT (ANTRIAN) --}}
+    <div class="schedule-section" id="queue-data-container">
+        <div class="section-header">
+            <h2><i class="fas fa-stethoscope"></i> Antrian Per Layanan</h2>
+        </div>
+
+        @if($pendaftarans->count() > 0)
+            
+            {{-- TAB NAVIGATION WITH HORIZONTAL SCROLL --}}
+            <div class="tabs-container">
+                <div class="tabs-wrapper">
+                    @foreach ($pendaftarans as $layanan => $listPendaftaran)
+                        <button class="tab-btn {{ $loop->first ? 'active' : '' }}" 
+                                id="btn-tab-{{ Str::slug($layanan) }}"
+                                onclick="openTab(event, 'tab-{{ Str::slug($layanan) }}')">
+                            <i class="fas fa-hospital-user"></i>
+                            {{ $layanan }}
+                            <span class="tab-count">{{ count($listPendaftaran) }}</span>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- TAB CONTENTS --}}
+            @foreach ($pendaftarans as $layanan => $listPendaftaran)
+                <div id="tab-{{ Str::slug($layanan) }}" class="tab-pane {{ $loop->first ? 'active' : '' }}">
+                    
+                    <div class="layanan-group-modern">
+                        <div class="layanan-header-modern">
+                            <div class="layanan-title-wrapper">
+                                <i class="fas fa-hospital"></i>
+                                <h3>{{ $layanan }}</h3>
+                            </div>
+                            <span class="schedule-count">
+                                <i class="fas fa-users"></i>
+                                {{ count($listPendaftaran) }} Pasien
+                            </span>
+                        </div>
+
+                        <div class="schedule-container-modern">
+                            <div class="table-responsive">
+                                <table class="schedule-table">
+                                    <thead>
+                                        <tr>
+                                            <th><i class="fas fa-hashtag"></i> Antrian</th>
+                                            <th><i class="fas fa-user"></i> Pasien</th>
+                                            <th><i class="fas fa-info-circle"></i> Status</th>
+                                            <th class="text-center"><i class="fas fa-bullhorn"></i> Aksi Panggil</th>
+                                            <th class="text-center"><i class="fas fa-cog"></i> Aksi Data</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($listPendaftaran as $index => $pendaftaran)
+                                            <tr class="schedule-row">
+                                                {{-- No Antrian --}}
+                                                <td>
+                                                    <span class="queue-number-badge">{{ $pendaftaran->no_antrian ?? '-' }}</span>
+                                                </td>
+
+                                                {{-- Info Pasien --}}
+                                                <td>
+                                                    <div class="doctor-info">
+                                                        <div class="doctor-avatar">
+                                                            @if($pendaftaran->user?->profile_photo_path)
+                                                                <img src="{{ asset('storage/' . $pendaftaran->user->profile_photo_path) }}" alt="Foto">
+                                                            @else
+                                                                <i class="fas fa-user"></i>
+                                                            @endif
+                                                        </div>
+                                                        <div class="patient-details">
+                                                            <span class="doctor-name">{{ $pendaftaran->user->name ?? $pendaftaran->nama_lengkap }}</span>
+                                                            <span class="patient-email">
+                                                                Dokter: {{ $pendaftaran->jadwalPraktek?->tenagaMedis?->name ?? 'N/A' }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {{-- Status --}}
+                                                <td>
+                                                    @if($pendaftaran->status == 'Menunggu')
+                                                        <span class="status-badge-modern status-waiting">
+                                                            <i class="fas fa-clock"></i> Menunggu
+                                                        </span>
+                                                    @elseif($pendaftaran->status == 'Hadir')
+                                                        <span class="status-badge-modern status-done">
+                                                            <i class="fas fa-user-check"></i> Hadir
+                                                        </span>
+                                                    @elseif($pendaftaran->status == 'Diperiksa Awal')
+                                                        <span class="status-badge-modern status-checking">
+                                                            <i class="fas fa-stethoscope"></i> Diperiksa
+                                                        </span>
+                                                    @elseif($pendaftaran->status == 'Selesai')
+                                                        <span class="status-badge-modern status-done">
+                                                            <i class="fas fa-check-circle"></i> Selesai
+                                                        </span>
+                                                    @else
+                                                        <span class="status-badge-modern status-waiting">
+                                                            {{ $pendaftaran->status }}
+                                                        </span>
+                                                    @endif
+
+                                                    {{-- Indikator Panggilan --}}
+                                                    @if($pendaftaran->status_panggilan == 'dipanggil')
+                                                        <br><span class="badge-call-status" style="animation: pulse-red 1s infinite;">
+                                                            <i class="fas fa-volume-up"></i> Memanggil ({{ $pendaftaran->jumlah_panggilan }}x)
+                                                        </span>
+                                                    @elseif($pendaftaran->status_panggilan == 'dialihkan')
+                                                        <br><span class="badge-call-status badge-skipped">
+                                                            <i class="fas fa-forward"></i> Dialihkan
+                                                        </span>
+                                                    @endif
+                                                </td>
+
+                                                {{-- AKSI PANGGIL (AJAX) --}}
+                                                <td class="text-center">
+                                                    @if($pendaftaran->status == 'Menunggu')
+                                                        <div class="action-group">
+                                                            {{-- Tombol Panggil --}}
+                                                            <button onclick="panggilPasien(this, {{ $pendaftaran->id }})" class="btn-call-modern" title="Panggil Pasien">
+                                                                <i class="fas fa-bullhorn"></i> Panggil
+                                                            </button>
+
+                                                            {{-- Tombol Konfirmasi Hadir --}}
+                                                            <button onclick="konfirmasiHadir(this, {{ $pendaftaran->id }})" class="btn-stop-call" title="Konfirmasi Pasien Hadir">
+                                                                <i class="fas fa-check"></i> Hadir
+                                                            </button>
+
+                                                            {{-- Tombol Skip --}}
+                                                            @if($pendaftaran->jumlah_panggilan >= 2)
+                                                                <button onclick="alihkanPasien({{ $pendaftaran->id }})" class="btn-skip-modern" title="Lewati Pasien">
+                                                                    <i class="fas fa-forward"></i> Skip
+                                                                </button>
+                                                            @endif
+                                                        </div>
+                                                    @elseif($pendaftaran->status == 'Hadir')
+                                                        <span style="font-size: 0.85rem; color: #155724; font-weight:600;">
+                                                            <i class="fas fa-check"></i> Pasien Hadir
+                                                        </span>
+                                                    @else
+                                                        <span style="font-size: 0.85rem; font-style: italic; color: var(--text-muted);">-</span>
+                                                    @endif
+                                                </td>
+
+                                                {{-- Aksi Data --}}
+                                                <td class="text-center">
+                                                    @if($pendaftaran->status == 'Hadir')
+                                                        <button type="button" 
+                                                                class="btn-action-primary open-periksa-modal"
+                                                                data-url="{{ route('admin.pemeriksaan-awal.json', $pendaftaran->id) }}">
+                                                            <span>Input Data</span>
+                                                            <i class="fas fa-clipboard-check"></i>
+                                                        </button>
+                                                    @elseif($pendaftaran->status == 'Diperiksa Awal')
+                                                        <button class="btn-action-disabled" disabled>
+                                                            <i class="fas fa-user-md"></i> Sedang Diperiksa
+                                                        </button>
+                                                    @elseif($pendaftaran->status == 'Selesai')
+                                                        <button type="button" class="btn-action-disabled" disabled>
+                                                            <i class="fas fa-check-double"></i> Selesai
+                                                        </button>
+                                                    @else
+                                                        <button class="btn-action-disabled" disabled title="Panggil dan konfirmasi hadir terlebih dahulu">
+                                                            <i class="fas fa-lock"></i> Input
+                                                        </button>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="5">
+                                                    <div class="empty-schedule">
+                                                        <i class="fas fa-inbox"></i>
+                                                        <p>Tidak ada antrian untuk layanan ini</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+
+        @else
+            <div class="alert-info-modern">
+                <div class="alert-icon"><i class="fas fa-info-circle"></i></div>
+                <div class="alert-text">
+                    Tidak ada data pendaftaran pasien untuk tanggal {{ \Carbon\Carbon::parse($tanggal ?? now())->isoFormat('D MMMM YYYY') }}.
+                </div>
+            </div>
+        @endif
+    </div>
+
+    {{-- MODAL --}}
+    <div id="periksaAwalModal" class="modal-overlay">
+        <div class="modal-card">
+            <span class="close-modal" id="closeModalBtn">&times;</span>
+            <div id="modalFormContent">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+@endsection
+
+@push('styles')
+<style>
+    /* Tambahan animasi pulse merah untuk status panggilan */
+    @keyframes pulse-red {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    /* ===== COMPLETE CSS SYSTEM ===== */
+    * { 
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    
+    :root {
+        --p1: #39A616;
+        --p2: #1D8208;
+        --p3: #0C5B00;
+        --grad: linear-gradient(135deg, #39A616, #1D8208, #0C5B00);
+        --grad-reverse: linear-gradient(135deg, #0C5B00, #1D8208, #39A616);
+        
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --text-muted: #9ca3af;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f9fafb;
+        --bg-tertiary: #f3f4f6;
+        --border-color: rgba(57, 166, 22, 0.15);
+        --shadow-color: rgba(57, 166, 22, 0.1);
+        --hover-bg: rgba(57, 166, 22, 0.04);
+        --modal-bg: #ffffff;
+        --modal-overlay: rgba(0,0,0,0.7);
+    }
+
+    [data-theme="dark"], .dark-mode {
+        --text-primary: #f9fafb;
+        --text-secondary: #d1d5db;
+        --text-muted: #9ca3af;
+        --bg-primary: #1f2937;
+        --bg-secondary: #111827;
+        --bg-tertiary: #374151;
+        --border-color: rgba(57, 166, 22, 0.3);
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --hover-bg: rgba(57, 166, 22, 0.15);
+        --modal-bg: #1f2937;
+        --modal-overlay: rgba(0,0,0,0.85);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --bg-primary: #1f2937;
+            --bg-secondary: #111827;
+            --bg-tertiary: #374151;
+            --border-color: rgba(57, 166, 22, 0.3);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --hover-bg: rgba(57, 166, 22, 0.15);
+            --modal-bg: #1f2937;
+            --modal-overlay: rgba(0,0,0,0.85);
+        }
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ===== HEADER BANNER ===== */
+    .dashboard-header-banner {
+        margin-bottom: 40px;
+    }
+
+    .header-content {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        background: var(--grad);
+        padding: 35px 40px;
+        border-radius: 24px;
+        box-shadow: 0 15px 50px rgba(57, 166, 22, 0.25);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .header-content::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 350px;
+        height: 350px;
+        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .header-icon {
+        width: 75px;
+        height: 75px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        color: #fff;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .header-text {
+        flex: 1;
+        position: relative;
+        z-index: 1;
+    }
+
+    .greeting-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(12px);
+        padding: 10px 20px;
+        border-radius: 25px;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+        color: #fff;
+        font-weight: 800;
+        font-size: 2.2rem;
+        margin: 0 0 10px 0;
+        letter-spacing: -0.5px;
+    }
+
+    .page-subtitle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: rgba(255, 255, 255, 0.95);
+        font-size: 1.05rem;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .hero-illustration {
+        position: relative;
+        flex-shrink: 0;
+        z-index: 1;
+    }
+
+    .time-widget {
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(15px);
+        padding: 18px 28px;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        min-width: 160px;
+        justify-content: center;
+    }
+
+    .pulse-circle {
+        position: absolute;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        animation: pulse-ring 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .pulse-1 { width: 140px; height: 140px; animation-delay: 0s; }
+    .pulse-2 { width: 170px; height: 170px; animation-delay: 0.8s; }
+    .pulse-3 { width: 200px; height: 200px; animation-delay: 1.6s; }
+
+    @keyframes pulse-ring {
+        0% { transform: translate(-50%, -50%) scale(0.9); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+
+    /* ===== SECTION HEADER ===== */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .section-header h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+    }
+
+    .section-header h2 i {
+        color: var(--p1);
+        font-size: 1.4rem;
+    }
+
+    /* ===== FILTER SECTION ===== */
+    .stats-section {
+        margin-bottom: 40px;
+    }
+
+    .filter-card-modern {
+        background: var(--bg-primary);
+        border-radius: 24px;
+        padding: 32px;
+        box-shadow: 0 8px 30px var(--shadow-color);
+        border: 1px solid var(--border-color);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .filter-card-modern:hover {
+        box-shadow: 0 20px 60px rgba(57, 166, 22, 0.25);
+        border-color: rgba(57, 166, 22, 0.4);
+    }
+
+    .filter-form-modern {
+        display: flex;
+        align-items: flex-end;
+        gap: 25px;
+        flex-wrap: wrap;
+    }
+
+    .filter-input-wrapper {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .filter-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        margin-bottom: 12px;
+    }
+
+    .filter-label i {
+        color: var(--p1);
+    }
+
+    .input-with-icon {
+        position: relative;
+    }
+
+    .input-with-icon i {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--p1);
+        font-size: 1.1rem;
+    }
+
+    .input-with-icon input {
+        width: 100%;
+        padding: 16px 20px 16px 50px;
+        border: 2px solid var(--border-color);
+        border-radius: 16px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .input-with-icon input:focus {
+        outline: none;
+        border-color: var(--p1);
+        background: var(--bg-primary);
+        box-shadow: 0 0 0 4px rgba(57, 166, 22, 0.1);
+    }
+
+    .filter-button-group {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .btn-filter-modern {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 28px;
+        border: none;
+        border-radius: 16px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        white-space: nowrap;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-filter-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.6s ease;
+    }
+
+    .btn-filter-modern:hover::before {
+        left: 100%;
+    }
+
+    .btn-primary-filter {
+        background: var(--grad);
+        color: white;
+    }
+
+    .btn-primary-filter:hover {
+        background: var(--grad-reverse);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(57, 166, 22, 0.4);
+    }
+
+    .btn-secondary-filter {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        color: white;
+    }
+
+    .btn-secondary-filter:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(108, 117, 125, 0.4);
+    }
+
+    /* ===== ALERTS ===== */
+    .alert-success-modern,
+    .alert-info-modern {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 20px 28px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .alert-success-modern {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border: 2px solid #28a745;
+    }
+
+    .alert-info-modern {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        border: 2px solid #17a2b8;
+    }
+
+    .alert-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .alert-success-modern .alert-icon {
+        background: #28a745;
+        color: white;
+        font-size: 22px;
+    }
+
+    .alert-info-modern .alert-icon {
+        background: #17a2b8;
+        color: white;
+        font-size: 22px;
+    }
+
+    .alert-text {
+        flex: 1;
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .alert-close-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 1.4rem;
+        padding: 5px;
+        transition: all 0.3s ease;
+    }
+
+    .alert-close-btn:hover {
+        color: var(--text-primary);
+        transform: rotate(90deg);
+    }
+
+    /* ===== TABS SYSTEM WITH HORIZONTAL SCROLL ===== */
+    .tabs-container {
+        margin-bottom: 25px;
+        position: relative;
+    }
+
+    .tabs-wrapper {
+        display: flex;
+        gap: 15px;
+        overflow-x: auto;
+        padding-bottom: 12px;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(57, 166, 22, 0.3) var(--bg-secondary);
+    }
+
+    /* Custom Scrollbar untuk Tabs */
+    .tabs-wrapper::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .tabs-wrapper::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+        border-radius: 10px;
+    }
+
+    .tabs-wrapper::-webkit-scrollbar-thumb {
+        background-color: rgba(57, 166, 22, 0.3);
+        border-radius: 10px;
+        border: 2px solid var(--bg-secondary);
+    }
+
+    .tabs-wrapper::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(57, 166, 22, 0.5);
+    }
+
+    .tab-btn {
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        padding: 14px 28px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        position: relative;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .tab-btn i { font-size: 1.1rem; }
+
+    .tab-btn:hover {
+        transform: translateY(-3px);
+        color: var(--p1);
+        border-color: var(--p1);
+        box-shadow: 0 8px 20px rgba(57, 166, 22, 0.15);
+    }
+
+    .tab-btn.active {
+        background: var(--grad);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 8px 25px rgba(57, 166, 22, 0.3);
+    }
+
+    .tab-count {
+        background: rgba(255,255,255,0.25);
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.85em;
+        font-weight: 700;
+    }
+
+    .tab-btn:not(.active) .tab-count {
+        background: rgba(0,0,0,0.06);
+        color: var(--text-muted);
+    }
+
+    .tab-pane {
+        display: none;
+    }
+
+    .tab-pane.active {
+        display: block;
+    }
+
+    /* ===== SCHEDULE SECTION ===== */
+    .schedule-section {
+        margin-bottom: 30px;
+    }
+
+    .layanan-group-modern {
+        margin-bottom: 30px;
+    }
+
+    .layanan-header-modern {
+        background: var(--grad);
+        padding: 24px 30px;
+        border-radius: 24px 24px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(57, 166, 22, 0.2);
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .layanan-title-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .layanan-title-wrapper i {
+        font-size: 1.6rem;
+        color: white;
+    }
+
+    .layanan-title-wrapper h3 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: white;
+        margin: 0;
+    }
+
+    .schedule-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+    }
+
+    .schedule-container-modern {
+        background: var(--bg-primary);
+        border-radius: 0 0 24px 24px;
+        box-shadow: 0 8px 30px var(--shadow-color);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .schedule-container-modern:hover {
+        box-shadow: 0 20px 60px rgba(57, 166, 22, 0.25);
+        border-color: rgba(57, 166, 22, 0.4);
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(57, 166, 22, 0.3) var(--bg-secondary);
+    }
+
+    /* Custom Scrollbar untuk Table */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+        border-radius: 10px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background-color: rgba(57, 166, 22, 0.3);
+        border-radius: 10px;
+        border: 2px solid var(--bg-secondary);
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(57, 166, 22, 0.5);
+    }
+
+    .schedule-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 900px;
+    }
+
+    .schedule-table thead {
+        background: var(--grad);
+    }
+
+    .schedule-table thead th {
+        padding: 20px 24px;
+        text-align: left;
+        color: white;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        white-space: nowrap;
+    }
+
+    .schedule-table thead th i {
+        margin-right: 10px;
+        opacity: 0.95;
+    }
+
+    .schedule-table thead th.text-center {
+        text-align: center;
+    }
+
+    .schedule-row {
+        border-bottom: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    .schedule-row:hover {
+        background: var(--hover-bg);
+    }
+
+    .schedule-table tbody td {
+        padding: 20px 24px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+
+    .schedule-table tbody td.text-center {
+        text-align: center;
+    }
+
+    .doctor-info {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .doctor-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--grad);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 20px;
+        flex-shrink: 0;
+        overflow: hidden;
+        border: 3px solid var(--border-color);
+        box-shadow: 0 4px 12px rgba(57, 166, 22, 0.2);
+    }
+
+    .doctor-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .patient-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 150px;
+    }
+
+    .doctor-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .patient-email {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .queue-number-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+        border-radius: 14px;
+        font-weight: 800;
+        font-size: 1.2rem;
+        padding: 0 12px;
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    }
+
+    /* ===== STATUS BADGES ===== */
+    .status-badge-modern {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    .status-waiting {
+        background: linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(230, 126, 34, 0.25));
+        color: #856404;
+        border: 1px solid rgba(243, 156, 18, 0.3);
+    }
+
+    .status-checking {
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.15), rgba(41, 128, 185, 0.25));
+        color: #0c5460;
+        border: 1px solid rgba(52, 152, 219, 0.3);
+    }
+
+    .status-done {
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(39, 174, 96, 0.25));
+        color: #155724;
+        border: 1px solid rgba(46, 204, 113, 0.3);
+    }
+
+    /* ===== CALLING SYSTEM BUTTONS ===== */
+    .action-group {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .btn-call-modern {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 14px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .btn-call-modern:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4); 
+    }
+
+    .btn-call-modern:disabled {
+        background: #cbd5e1;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .btn-stop-call {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 14px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .btn-stop-call:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4); 
+    }
+
+    .btn-skip-modern {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 14px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .btn-skip-modern:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4); 
+    }
+
+    .badge-call-status {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 20px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-weight: 700;
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #bfdbfe;
+        white-space: nowrap;
+    }
+
+    .badge-skipped {
+        color: #d97706;
+        background: #fffbeb;
+        border-color: #fcd34d;
+    }
+
+    /* ===== ACTION BUTTONS ===== */
+    .btn-action-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--grad);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 6px 20px rgba(57, 166, 22, 0.3);
+        position: relative;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .btn-action-primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.6s ease;
+    }
+
+    .btn-action-primary:hover::before {
+        left: 100%;
+    }
+
+    .btn-action-primary:hover {
+        background: var(--grad-reverse);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(57, 166, 22, 0.45);
+    }
+
+    .btn-action-primary i {
+        transition: transform 0.3s ease;
+    }
+
+    .btn-action-primary:hover i {
+        transform: translateX(4px);
+    }
+
+    .btn-action-disabled {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg-tertiary);
+        color: var(--text-muted);
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border: none;
+        cursor: not-allowed;
+        opacity: 0.7;
+        white-space: nowrap;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-schedule {
+        text-align: center;
+        padding: 70px 20px;
+        color: var(--text-muted);
+    }
+
+    .empty-schedule i {
+        font-size: 4.5rem;
+        margin-bottom: 24px;
+        opacity: 0.3;
+    }
+
+    .empty-schedule p {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: var(--text-secondary);
+    }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: var(--modal-overlay);
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(8px);
+    }
+
+    .modal-card {
+        background-color: var(--modal-bg);
+        margin: auto;
+        border-radius: 24px;
+        width: 90%;
+        max-width: 650px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .close-modal {
+        color: var(--text-muted);
+        align-self: flex-end;
+        font-size: 36px;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 15px 25px;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .close-modal:hover, .close-modal:focus {
+        color: var(--p1);
+        transform: rotate(90deg);
+    }
+
+    #modalFormContent {
+        padding: 0 40px 40px 40px;
+        overflow-y: auto;
+        flex-grow: 1;
+    }
+
+    #modalFormContent form {
+        display: block;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 25px;
+        border-bottom: 3px solid var(--border-color);
+    }
+
+    .form-title {
+        background: var(--grad);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+
+    .form-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 12px;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 14px 18px;
+        border: 2px solid var(--border-color);
+        border-radius: 14px;
+        font-size: 0.95rem;
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--p1);
+        background-color: var(--bg-primary);
+        box-shadow: 0 0 0 4px rgba(57, 166, 22, 0.15);
+    }
+
+    .form-actions {
+        text-align: center;
+        margin-top: 35px;
+        padding-top: 30px;
+        border-top: 3px solid var(--border-color);
+    }
+
+    .btn-primary {
+        background: var(--grad);
+        color: #fff;
+        border: none;
+        padding: 16px 45px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 1.05rem;
+        width: 100%;
+        box-shadow: 0 6px 20px rgba(57, 166, 22, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.6s ease;
+    }
+
+    .btn-primary:hover::before {
+        left: 100%;
+    }
+
+    .btn-primary:hover {
+        background: var(--grad-reverse);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(57, 166, 22, 0.5);
+    }
+
+    .btn-secondary {
+        margin-top: 18px;
+        display: inline-block;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        color: var(--p1);
+    }
+
+    .loading-spinner {
+        border: 6px solid var(--bg-tertiary);
+        border-top: 6px solid var(--p1);
+        border-radius: 50%;
+        width: 70px;
+        height: 70px;
+        animation: spin 1s linear infinite;
+        margin: 80px auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* ===== RESPONSIVE DESIGN FOR MOBILE ===== */
+    
+    /* Tablet */
+    @media (max-width: 992px) {
+        .hero-illustration { 
+            display: none; 
+        }
+        
+        .filter-form-modern { 
+            flex-direction: column; 
+            align-items: stretch; 
+        }
+        
+        .filter-input-wrapper { 
+            width: 100%; 
+            min-width: unset;
+        }
+        
+        .filter-button-group { 
+            width: 100%; 
+        }
+        
+        .btn-filter-modern { 
+            flex: 1; 
+            justify-content: center; 
+        }
+
+        .schedule-table {
+            min-width: 800px;
+        }
+    }
+
+    /* Mobile Landscape & Portrait */
+    @media (max-width: 768px) {
+        .dashboard-header-banner {
+            margin-bottom: 30px;
+        }
+
+        .header-content { 
+            flex-direction: column; 
+            text-align: center; 
+            padding: 28px 20px; 
+            gap: 16px;
+        }
+
+        .header-icon {
+            width: 65px;
+            height: 65px;
+            font-size: 32px;
+        }
+        
+        .page-title { 
+            font-size: 1.75rem; 
+        }
+
+        .page-subtitle {
+            font-size: 0.95rem;
+            justify-content: center;
+        }
+
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .section-header h2 {
+            font-size: 1.4rem;
+        }
+
+        .stats-section {
+            margin-bottom: 30px;
+        }
+
+        .filter-card-modern {
+            padding: 24px 20px;
+        }
+
+        .filter-button-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-filter-modern {
+            width: 100%;
+        }
+
+        .tabs-wrapper {
+            gap: 12px;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 12px 22px;
+            font-size: 0.9rem;
+        }
+
+        .layanan-header-modern { 
+            flex-direction: column; 
+            gap: 12px; 
+            align-items: flex-start; 
+            padding: 20px 24px;
+        }
+
+        .layanan-title-wrapper h3 {
+            font-size: 1.2rem;
+        }
+
+        .schedule-count {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+        
+        .schedule-table { 
+            font-size: 0.9rem; 
+            min-width: 750px;
+        }
+        
+        .schedule-table thead th, 
+        .schedule-table tbody td { 
+            padding: 16px 14px; 
+        }
+        
+        .doctor-avatar { 
+            width: 45px; 
+            height: 45px; 
+            font-size: 18px; 
+        }
+
+        .patient-details {
+            min-width: 130px;
+        }
+
+        .queue-number-badge {
+            min-width: 45px;
+            height: 45px;
+            font-size: 1.1rem;
+        }
+
+        .action-group { 
+            flex-direction: column; 
+            gap: 6px;
+        }
+        
+        .btn-call-modern, 
+        .btn-stop-call, 
+        .btn-skip-modern { 
+            width: 100%; 
+            justify-content: center; 
+            padding: 10px 18px;
+        }
+
+        .btn-action-primary {
+            padding: 10px 20px;
+        }
+
+        .btn-action-disabled {
+            padding: 10px 20px;
+        }
+        
+        .modal-card { 
+            width: 95%; 
+            margin: 20px; 
+        }
+        
+        #modalFormContent { 
+            padding: 0 24px 30px 24px; 
+        }
+        
+        .form-grid { 
+            grid-template-columns: 1fr; 
+        }
+
+        .form-title {
+            font-size: 1.75rem;
+        }
+    }
+
+    /* Extra Small Mobile */
+    @media (max-width: 576px) {
+        .header-content {
+            padding: 24px 18px;
+            border-radius: 20px;
+        }
+
+        .header-icon {
+            width: 60px;
+            height: 60px;
+            font-size: 28px;
+            border-radius: 14px;
+        }
+
+        .page-title { 
+            font-size: 1.5rem; 
+        }
+
+        .page-subtitle {
+            font-size: 0.9rem;
+        }
+        
+        .greeting-badge { 
+            font-size: 0.8rem; 
+            padding: 8px 16px; 
+        }
+
+        .section-header h2 { 
+            font-size: 1.25rem; 
+        }
+
+        .section-header h2 i {
+            font-size: 1.2rem;
+        }
+
+        .stats-section {
+            margin-bottom: 25px;
+        }
+
+        .filter-card-modern {
+            padding: 20px 16px;
+            border-radius: 20px;
+        }
+
+        .filter-label {
+            font-size: 0.9rem;
+        }
+
+        .input-with-icon input {
+            padding: 14px 16px 14px 45px;
+            font-size: 0.9rem;
+        }
+
+        .btn-filter-modern {
+            padding: 14px 24px;
+            font-size: 0.9rem;
+        }
+
+        .tabs-wrapper {
+            gap: 10px;
+        }
+
+        .tab-btn {
+            padding: 11px 20px;
+            font-size: 0.85rem;
+        }
+
+        .tab-count {
+            padding: 2px 8px;
+            font-size: 0.8em;
+        }
+
+        .layanan-header-modern {
+            padding: 18px 20px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .layanan-title-wrapper i {
+            font-size: 1.4rem;
+        }
+
+        .layanan-title-wrapper h3 {
+            font-size: 1.1rem;
+        }
+
+        .schedule-count {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+
+        .schedule-container-modern {
+            border-radius: 0 0 20px 20px;
+        }
+
+        .schedule-table {
+            min-width: 700px;
+        }
+        
+        .schedule-table thead th { 
+            font-size: 0.8rem; 
+            padding: 14px 12px; 
+        }
+        
+        .schedule-table tbody td { 
+            padding: 14px 12px; 
+            font-size: 0.85rem;
+        }
+
+        .doctor-avatar {
+            width: 42px;
+            height: 42px;
+            font-size: 16px;
+            border-width: 2px;
+        }
+
+        .patient-details {
+            min-width: 120px;
+        }
+
+        .doctor-name {
+            font-size: 0.9rem;
+        }
+
+        .patient-email {
+            font-size: 0.8rem;
+        }
+
+        .queue-number-badge {
+            min-width: 42px;
+            height: 42px;
+            font-size: 1rem;
+        }
+
+        .status-badge-modern {
+            font-size: 0.8rem;
+            padding: 8px 14px;
+        }
+
+        .badge-call-status {
+            font-size: 0.75rem;
+            padding: 5px 10px;
+        }
+
+        .btn-call-modern,
+        .btn-stop-call,
+        .btn-skip-modern {
+            font-size: 0.85rem;
+            padding: 9px 16px;
+        }
+        
+        .btn-action-primary span { 
+            display: none; 
+        }
+
+        .btn-action-primary,
+        .btn-action-disabled {
+            padding: 10px 18px;
+            font-size: 0.85rem;
+        }
+
+        .empty-schedule {
+            padding: 50px 16px;
+        }
+
+        .empty-schedule i {
+            font-size: 3.5rem;
+        }
+
+        .empty-schedule p {
+            font-size: 1rem;
+        }
+
+        .modal-card {
+            width: 96%;
+            margin: 15px;
+            border-radius: 20px;
+        }
+
+        .close-modal {
+            font-size: 32px;
+            padding: 12px 20px;
+        }
+
+        #modalFormContent {
+            padding: 0 20px 25px 20px;
+        }
+
+        .form-title {
+            font-size: 1.5rem;
+        }
+
+        .form-subtitle {
+            font-size: 0.95rem;
+        }
+
+        .form-label {
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            padding: 12px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            padding: 14px 35px;
+            font-size: 1rem;
+        }
+    }
+
+    /* Ultra Small Mobile (< 400px) */
+    @media (max-width: 400px) {
+        .page-title {
+            font-size: 1.35rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.15rem;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            font-size: 0.8rem;
+        }
+
+        .layanan-title-wrapper h3 {
+            font-size: 1rem;
+        }
+
+        .schedule-table {
+            min-width: 650px;
+        }
+
+        .form-title {
+            font-size: 1.35rem;
+        }
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // ==========================================
+    // 1. MANAJEMEN TAB & STATE
+    // ==========================================
+    
+    function applyTabState(activeTabId) {
+        if(!activeTabId) return;
+        
+        document.querySelectorAll('.tab-pane').forEach(el => {
+            el.style.display = 'none';
+            el.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+        const pane = document.getElementById(activeTabId);
+        if(pane) {
+            pane.style.display = 'block';
+            pane.classList.add('active');
+        }
+        
+        const btnId = 'btn-' + activeTabId;
+        const btn = document.getElementById(btnId);
+        if(btn) {
+            btn.classList.add('active');
+            // Scroll tab ke posisi yang visible
+            btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }
+    
+    function openTab(evt, tabName) {
+        sessionStorage.setItem('activeQueueTab', tabName);
+        applyTabState(tabName);
+
+        if (evt) {
+            evt.preventDefault();
+        }
+    }
+
+    // ==========================================
+    // 2. FUNGSI FORCE REFRESH (TANPA RELOAD)
+    // ==========================================
+    
+    window.forceRefreshQueueData = function() {
+        const container = document.getElementById('queue-data-container');
+        const url = new URL(window.location.href);
+        
+        url.searchParams.set('auto_reload_time', new Date().getTime());
+
+        fetch(url.toString(), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newContent = doc.getElementById('queue-data-container');
+
+            if (newContent) {
+                const scrollPos = window.scrollY;
+                container.innerHTML = newContent.innerHTML;
+                window.scrollTo(0, scrollPos);
+                
+                if (typeof window.rebindEvents === 'function') {
+                    window.rebindEvents();
+                }
+            }
+        })
+        .catch(err => console.error('Force Refresh Error:', err));
+    };
+
+    // ==========================================
+    // 3. FUNGSI TOMBOL AKSI (AJAX SMOOTH)
+    // ==========================================
+
+    window.panggilPasien = function(btnElement, id) {
+        const originalContent = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btnElement.disabled = true;
+
+        fetch(`/admin/panggil-pasien/${id}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                audio.play().catch(e => console.log('Audio error:', e));
+
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+                Toast.fire({ icon: 'success', title: `Memanggil... (${data.jumlah_panggilan}x)` });
+
+                window.forceRefreshQueueData();
+            } else {
+                Swal.fire('Error', data.message, 'error');
+                btnElement.innerHTML = originalContent;
+                btnElement.disabled = false;
+            }
+        })
+        .catch(err => {
+            btnElement.innerHTML = originalContent;
+            btnElement.disabled = false;
+            Swal.fire('Error', 'Koneksi gagal', 'error');
+        });
+    }
+
+    window.konfirmasiHadir = function(btnElement, id) {
+        Swal.fire({
+            title: 'Konfirmasi Pasien Hadir?',
+            text: "Status akan diubah menjadi 'Hadir' dan form input data akan dibuka.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Pasien Hadir'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                btnElement.disabled = true;
+
+                fetch(`/admin/tandai-hadir/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire({
+                            title: 'Berhasil',
+                            text: 'Pasien dikonfirmasi hadir.',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        window.forceRefreshQueueData();
+                    } else {
+                        btnElement.innerHTML = '<i class="fas fa-check"></i> Hadir';
+                        btnElement.disabled = false;
+                        Swal.fire('Error', 'Gagal update status', 'error');
+                    }
+                })
+                .catch(err => {
+                    btnElement.innerHTML = '<i class="fas fa-check"></i> Hadir';
+                    btnElement.disabled = false;
+                    Swal.fire('Error', 'Koneksi gagal', 'error');
+                });
+            }
+        });
+    }
+
+    window.alihkanPasien = function(id) {
+        Swal.fire({
+            title: 'Lewati Pasien?',
+            text: "Status akan diubah menjadi 'Dialihkan'.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Lewati'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/admin/alihkan-pasien/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        window.forceRefreshQueueData();
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Error', 'Koneksi gagal', 'error');
+                });
+            }
+        });
+    }
+
+    // --- 4. FLATPICKR ---
+    flatpickr("#tanggalFilter", {
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "d M Y",
+        defaultDate: "{{ $tanggal ?? '' }}",
+        locale: { firstDayOfWeek: 1 }
+    });
+
+    // --- 5. LOGIC MODAL ---
+    const modal = document.getElementById('periksaAwalModal');
+    const modalContent = document.getElementById('modalFormContent');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    
+    document.addEventListener('click', async function(e) {
+        const btn = e.target.closest('.open-periksa-modal');
+        if (btn) {
+            e.preventDefault();
+            const jsonUrl = btn.dataset.url;
+            modal.style.display = 'flex';
+            modalContent.innerHTML = '<div class="loading-spinner"></div>';
+
+            try {
+                const response = await fetch(jsonUrl);
+                if (!response.ok) throw new Error('Gagal mengambil data');
+                const data = await response.json();
+
+                const formHtml = `
+                    <div class="form-header">
+                        <h2 class="form-title">Input Pemeriksaan Awal</h2>
+                        <p class="form-subtitle">Pasien: <strong>${data.pasien_name}</strong> (${data.layanan_name})</p>
+                    </div>
+                    <form action="${data.form_action}" method="POST">
+                        <input type="hidden" name="_token" value="{{ csrf_token() }}"> 
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Tekanan Darah (mmHg)</label>
+                                <input type="text" name="tekanan_darah" class="form-control" placeholder="cth: 120/80" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Berat Badan (Kg)</label>
+                                <input type="number" step="0.1" name="berat_badan" class="form-control" placeholder="cth: 55.5" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Suhu Tubuh (°C)</label>
+                                <input type="number" step="0.1" name="suhu_tubuh" class="form-control" placeholder="cth: 36.5" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Simpan Pemeriksaan Awal</button>
+                            <a href="#" class="btn-secondary" id="batalModalBtn">Batal</a>
+                        </div>
+                    </form>
+                `;
+                
+                modalContent.innerHTML = formHtml;
+                
+                document.getElementById('batalModalBtn').addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    modal.style.display = 'none';
+                });
+
+            } catch (error) {
+                console.error(error);
+                modalContent.innerHTML = '<div style="text-align:center; padding:40px; color:#ef4444;"><i class="fas fa-exclamation-triangle fa-2x"></i><br>Gagal memuat form.</div>';
+            }
+        }
+    });
+
+    if(closeModalBtn) closeModalBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+    
+    window.addEventListener('click', (event) => {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // --- 6. INITIALIZE & REBINDING ---
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        if (typeof window.initAutoRefresh === 'function') {
+            window.initAutoRefresh(['#queue-data-container']);
+        }
+
+        window.rebindEvents = function() {
+            const activeTab = sessionStorage.getItem('activeQueueTab');
+            
+            if (activeTab && document.getElementById(activeTab)) {
+                applyTabState(activeTab);
+            } else {
+                const firstTab = document.querySelector('.tab-pane');
+                if(firstTab) applyTabState(firstTab.id);
+            }
+        };
+        
+        window.rebindEvents();
+    });
+
+    // Auto Hide Alert
+    const alertElement = document.getElementById('autoHideAlert');
+    if (alertElement) {
+        setTimeout(() => {
+            alertElement.style.opacity = '0';
+            setTimeout(() => alertElement.remove(), 600);
+        }, 5000); 
+    }
+</script>
+@endpush
