@@ -30,12 +30,16 @@ use App\Http\Controllers\Apoteker\RiwayatController;
 use App\Http\Controllers\Apoteker\LaporanController;
 use App\Http\Controllers\Auth\GoogleController;
 
+use App\Http\Controllers\ContactController;
 /*
 |--------------------------------------------------------------------------
 | Rute Publik & Auth Pasien
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () { return view('welcome'); })->name('home');
+
+// Tambahkan Route ini untuk memproses form kontak
+Route::post('/contact-send', [ContactController::class, 'send'])->name('contact.send');
 
 // Auth Pasien
 Route::controller(AuthController::class)->group(function () {

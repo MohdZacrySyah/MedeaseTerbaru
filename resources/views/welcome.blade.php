@@ -3,6 +3,8 @@
 <head> 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}" />
@@ -37,8 +39,6 @@
             background: var(--bg-primary);
             transition: background 0.3s ease, color 0.3s ease;
         }
-
-
 
         .dark-mode-toggle {
             position: fixed;
@@ -1789,7 +1789,6 @@
 <body>
    
         
-        <!-- Floating Particles -->
         <div class="loader-particle"></div>
         <div class="loader-particle"></div>
         <div class="loader-particle"></div>
@@ -1798,12 +1797,10 @@
 
    
 
-    <!-- Dark Mode Toggle -->
     <button class="dark-mode-toggle" id="darkModeToggle" title="Toggle Dark Mode">
         <i class="fas fa-moon"></i>
     </button>
 
-    <!-- Animated Background Particles -->
     <div class="particles">
         <div class="particle"></div>
         <div class="particle"></div>
@@ -1833,7 +1830,6 @@
                     <li><a href="#kontak">Kontak</a></li> 
 
                     @auth
-                        <!-- Jika sudah login, tampilkan dropdown profil -->
                         <li class="nav-profile-dropdown">
                             <a href="#" class="btn-profile" id="profileDropdownBtn">
                                 @if(Auth::user()->profile_photo_path)
@@ -1857,7 +1853,6 @@
                             </div>
                         </li>
                     @else
-                        <!-- Jika belum login, tampilkan tombol login -->
                         <li><a href="{{ route('login') }}" class="btn-login">Login</a></li>
                     @endauth
                 </ul>
@@ -1871,7 +1866,8 @@
                 <h1>Layanan Kesehatan <span class="highlight typed-text"></span> untuk Keluarga Indonesia</h1>
                 <p>Praktek Bersama Fathurrahman hadir dengan layanan kesehatan berkualitas, tenaga medis profesional, dan fasilitas modern.</p>
                 <div class="hero-buttons">
-                    <a href="{{ route('login') }}" class="btn-primary"><i class="fas fa-calendar-check"></i> Daftar Sekarang</a>
+                    <a href="{{ Auth::check() ? route('daftar.index') : route('login') }}" class="btn-primary"><i class="fas fa-calendar-check"></i> Daftar Sekarang</a>
+                    
                     <a href="#layanan" class="btn-secondary"><i class="fas fa-info-circle"></i> Lihat Layanan</a>
                 </div>
             </div>
@@ -2149,7 +2145,8 @@
         <div class="cta-container">
             <h2>Siap Memulai Perjalanan Kesehatan Anda?</h2>
             <p>Daftar sekarang dan dapatkan konsultasi gratis untuk kunjungan pertama Anda</p>
-            <a href="{{ route('login') }}" class="cta-button">
+            
+            <a href="{{ Auth::check() ? route('daftar.index') : route('login') }}" class="cta-button">
                 <i class="fas fa-calendar-alt"></i>
                 <span>Buat Janji Temu Sekarang</span>
             </a>
@@ -2338,8 +2335,9 @@
             });
         });
 
-        // Contact Form Validation
+        // Contact Form Logic (WA & Email)
         const contactForm = document.getElementById('contactForm');
+        
         if (contactForm) {
             contactForm.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -2347,6 +2345,7 @@
                 let isValid = true;
                 const formGroups = this.querySelectorAll('.form-group');
                 
+                // --- Validasi Input ---
                 formGroups.forEach(group => {
                     const input = group.querySelector('input, textarea');
                     if (!input.value.trim()) {
@@ -2355,8 +2354,6 @@
                     } else {
                         group.classList.remove('error');
                     }
-                    
-                    // Email validation
                     if (input.type === 'email' && input.value.trim()) {
                         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                         if (!emailRegex.test(input.value)) {
@@ -2367,19 +2364,82 @@
                 });
                 
                 if (isValid) {
-                    // Show loading overlay
-                    document.getElementById('loadingOverlay').classList.add('active');
+                    // Ambil Data Input
+                    const name = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const phone = document.getElementById('phone').value;
+                    const message = document.getElementById('message').value;
+                    const submitBtn = this.querySelector('.submit-btn');
+                    const originalBtnText = submitBtn.innerHTML;
+
+                    // Ubah tombol jadi Loading
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+                    submitBtn.disabled = true;
+
+                    // 1. Siapkan Link WhatsApp
+                    // Format nomor harus 628... (ganti 0 di depan dengan 62)
+                    let formattedPhone = '6282258468728'; // Nomor Admin MedEase sesuai tampilan
                     
-                    // Simulate form submission
-                    setTimeout(() => {
-                        document.getElementById('loadingOverlay').classList.remove('active');
-                        alert('Terima kasih! Pesan Anda telah terkirim. Kami akan segera menghubungi Anda.');
+                    let textWA = `Halo Admin MedEase, perkenalkan saya:
+*Nama*: ${name}
+*Email*: ${email}
+*No HP*: ${phone}
+
+*Pesan*: 
+${message}`;
+
+                    let urlWA = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(textWA)}`;
+
+                    // 2. Kirim Email via AJAX ke Laravel
+                    // Pastikan Anda sudah membuat Route 'contact.send' di web.php sesuai instruksi sebelumnya
+                    fetch("{{ route('contact.send') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            name: name,
+                            email: email,
+                            phone: phone,
+                            message: message
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Email sukses atau gagal, kita tetap buka WA agar user bisa lanjut chat
+                        
+                        // Kembalikan tombol
+                        submitBtn.innerHTML = originalBtnText;
+                        submitBtn.disabled = false;
+
+                        if(data.status === 'success') {
+                            alert('Pesan email berhasil terkirim! Anda akan diarahkan ke WhatsApp kami.');
+                        } else {
+                            // Jika email gagal (misal server error), tetap arahkan ke WA sebagai backup
+                            console.log('Email gagal dikirim, beralih ke WhatsApp.');
+                            alert('Terimakasih. Silahkan lanjutkan percakapan melalui WhatsApp.');
+                        }
+
+                        // Buka WhatsApp di tab baru
+                        window.open(urlWA, '_blank');
+                        
+                        // Reset Form
                         contactForm.reset();
-                    }, 2000);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        submitBtn.innerHTML = originalBtnText;
+                        submitBtn.disabled = false;
+                        
+                        // Jika fetch error (misal koneksi), tetap buka WA
+                        alert('Terimakasih. Silahkan lanjutkan percakapan melalui WhatsApp.');
+                        window.open(urlWA, '_blank');
+                    });
                 }
             });
-            
-            // Remove error class on input
+
+            // Remove error class on input (Listener tetap sama)
             contactForm.querySelectorAll('input, textarea').forEach(input => {
                 input.addEventListener('input', function() {
                     this.closest('.form-group').classList.remove('error');
@@ -2405,13 +2465,18 @@
             });
         }
 
-        // Logout Confirmation for Welcome Page
+       // Logout Confirmation for Welcome Page
         function confirmLogoutWelcome(event) {
             event.preventDefault();
             
             if (confirm('Apakah Anda yakin ingin keluar?')) {
-                // Show loading overlay
-                document.getElementById('loadingOverlay').classList.add('active');
+                
+                // PERBAIKAN: Cek dulu apakah elemen loadingOverlay ada
+                // Jika tidak ada, lewati saja agar script tidak error
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('active');
+                }
                 
                 // Create a form and submit for logout
                 const form = document.createElement('form');
@@ -2428,7 +2493,6 @@
                 form.submit();
             }
         }
-
         // Close mobile menu when clicking outside
         document.addEventListener('click', function(e) {
             const navMenu = document.getElementById('navMenu');
