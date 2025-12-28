@@ -71,21 +71,10 @@ Route::controller(PendaftaranController::class)->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Panel Pasien (Middleware Auth Web)
+| Panel Pasien (Middleware Auth)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
-    
-    // === CHAT KHUSUS PASIEN ===
-    // URL: /chat/...
-    Route::controller(ChatController::class)->prefix('chat')->name('chat.')->group(function() {
-        Route::get('/', 'index')->name('index');
-        Route::get('/contacts', 'getContacts')->name('contacts');
-        Route::get('/messages/{partnerId}', 'getMessages')->name('messages');
-        Route::post('/send', 'sendMessage')->name('send');
-        Route::post('/read/{partnerId}', 'markRead')->name('read');
-    });
-
     Route::get('/api/patient/check-notif', [AuthController::class, 'checkNotif'])->name('api.patient.check_notif');
     
     Route::controller(AuthController::class)->group(function () {
@@ -121,6 +110,24 @@ Route::middleware(['auth'])->group(function () {
         }
         return response()->json(['success' => true]);
     })->name('stop.alarm');
+});
+
+/*
+|--------------------------------------------------------------------------
+| SYSTEM CHAT (Shared Route)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:web,tenaga_medis'])->group(function () {
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    
+    // API Endpoints Chat
+    Route::get('/chat/contacts', [ChatController::class, 'getContacts'])->name('chat.contacts');
+    Route::get('/chat/messages/{partnerId}', [ChatController::class, 'getMessages'])->name('chat.messages');
+    Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+    Route::post('/chat/read/{partnerId}', [ChatController::class, 'markRead'])->name('chat.read');
+    
+    // Search (Khusus Dokter)
+    Route::get('/chat/search-patient', [ChatController::class, 'searchPatient'])->name('chat.search');
 });
 
 /*
@@ -182,18 +189,6 @@ Route::controller(TenagaMedisController::class)->prefix('tenaga-medis')->name('t
 });
 
 Route::middleware(['auth:tenaga_medis'])->prefix('tenaga-medis')->name('tenaga-medis.')->group(function () {
-    
-    // === CHAT KHUSUS TENAGA MEDIS ===
-    // URL: /tenaga-medis/chat/...
-    Route::controller(ChatController::class)->prefix('chat')->name('chat.')->group(function() {
-        Route::get('/', 'index')->name('index');
-        Route::get('/contacts', 'getContacts')->name('contacts');
-        Route::get('/messages/{partnerId}', 'getMessages')->name('messages');
-        Route::post('/send', 'sendMessage')->name('send');
-        Route::post('/read/{partnerId}', 'markRead')->name('read');
-        Route::get('/search-patient', 'searchPatient')->name('search'); 
-    });
-
     Route::post('/jadwal/cancel', [AdminJadwalController::class, 'cancelJadwal'])->name('jadwal.cancel'); 
     Route::get('/dashboard/data', [TenagaMedisController::class, 'getDashboardData'])->name('dashboard.data');
     Route::get('/api/check-notif', [TenagaMedisController::class, 'checkNotif'])->name('api.check_notif');
