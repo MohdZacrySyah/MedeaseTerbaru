@@ -13,9 +13,30 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage; 
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\BookingController; 
+
+
+// ===============================================
+// API CHAT (Tambahkan ini di bagian bawah)
+// ===============================================
+
+
+// Ambil daftar kontak dokter
+Route::get('/chat/contacts', [ChatController::class, 'getContacts']);
+
+// Ambil detail pesan dengan dokter tertentu (ID Dokter)
+Route::get('/chat/messages/{partnerId}', [ChatController::class, 'getMessages']);
+
+// Kirim pesan
+Route::post('/chat/send', [ChatController::class, 'sendMessage']);
 
 // Import Controller yang dibutuhkan untuk API (khusus Pasien)
-use App\Http\Controllers\Api\BookingController; 
+
+
+// ============================================================================
+//                                API PUBLIC
+// ============================================================================
 
 // --- API REGISTER ---
 Route::post('/register', function (Request $request) {
@@ -65,6 +86,7 @@ Route::post('/login-mobile', function (Request $request) {
         
         Log::info("User ID: {$user->id} successfully authenticated. Checking role: {$user->role}");
 
+        // Validasi Role: Hanya Pasien yang boleh login lewat API Mobile
         if($user->role !== 'pasien') {
             Log::warning("Login denied: User ID {$user->id} has role '{$user->role}' (Expected 'pasien')");
             Auth::logout(); 
@@ -96,9 +118,12 @@ Route::post('/login-mobile', function (Request $request) {
     ], 401);
 });
 
+// ============================================================================
+//                          API PRIVATE (BUTUH AUTH)
+// ============================================================================
+
 // --- API HISTORY PENDAFTARAN ---
 Route::get('/pendaftaran/history', function (Request $request) {
-    // ... (Inisialisasi userId tetap sama) ...
     $userId = $request->query('user_id');
 
     if (!$userId || $userId == 0) {
@@ -110,11 +135,12 @@ Route::get('/pendaftaran/history', function (Request $request) {
         ->join('tenaga_medis', 'jadwal_prakteks.tenaga_medis_id', '=', 'tenaga_medis.id')
         ->where('pendaftarans.user_id', '=', $userId) 
         
-        // FIX KRITIS: Hanya ambil status yang aktif, JANGAN ambil 'selesai' atau 'batal'
+        // FIX KRITIS: Hanya ambil status yang aktif (History yang belum selesai)
+        // Jika ingin history lengkap (termasuk selesai), hapus whereIn ini atau sesuaikan
+        // Di sini kita asumsikan history = antrian aktif yang sedang berjalan
         ->whereIn('pendaftarans.status', ['menunggu', 'hadir', 'dilayani', 'periksa awal']) 
         
         ->select(
-            // ... (Semua kolom select tetap sama) ...
             'pendaftarans.id',
             'pendaftarans.no_antrian',
             'pendaftarans.nama_layanan',
@@ -135,8 +161,8 @@ Route::get('/pendaftaran/history', function (Request $request) {
         'data' => $data
     ]);
 });
-// --- API NOTIFIKASI PEMBATALAN JADWAL DOKTER (FIX KRITIS) ---
-// --- API NOTIFIKASI PEMBATALAN JADWAL DOKTER (FINAL FIX: Ambil Alasan dari doctor_availabilities) ---
+
+// --- API NOTIFIKASI PEMBATALAN JADWAL DOKTER ---
 Route::get('/notifikasi/pembatalan', function (Request $request) {
     $userId = $request->query('user_id'); 
 
@@ -149,8 +175,7 @@ Route::get('/notifikasi/pembatalan', function (Request $request) {
             ->join('jadwal_prakteks as j', 'p.jadwal_praktek_id', '=', 'j.id')
             ->join('tenaga_medis as t', 'j.tenaga_medis_id', '=', 't.id')
             
-            // JOIN KRITIS: Hubungkan ke doctor_availabilities (d)
-            // Join menggunakan ID Jadwal Praktek (tenaga_medis_id) dan Tanggal Janji (date)
+            // JOIN KRITIS: Hubungkan ke doctor_availabilities (d) untuk ambil alasan
             ->leftJoin('doctor_availabilities as d', function($join) {
                 $join->on('t.id', '=', 'd.tenaga_medis_id')
                      ->on('p.jadwal_dipilih', '=', 'd.date');
@@ -165,8 +190,6 @@ Route::get('/notifikasi/pembatalan', function (Request $request) {
                 'p.nama_layanan',                 
                 'p.jadwal_dipilih',               
                 'p.status',                       
-                
-                // MENGAMBIL ALASAN DARI KOLOM 'reason' DI TABEL 'doctor_availabilities'
                 'd.reason as alasan_pembatalan' 
             )
             ->orderBy('p.updated_at', 'desc') 
@@ -182,7 +205,8 @@ Route::get('/notifikasi/pembatalan', function (Request $request) {
         return response()->json(['status' => 'error', 'message' => 'Query crash di server.', 'debug' => $e->getMessage()], 500);
     }
 });
-// --- API PENDAFTARAN MOBILE (FINAL FIX: ESTIMASI DIMULAI DARI JAM BUKA) ---
+
+// --- API PENDAFTARAN MOBILE (FINAL FIX: ESTIMASI & CEK JADWAL TUTUP) ---
 Route::post('/pendaftaran/store', function (Request $request) {
     // 1. Validasi Input Dasar
     $validator = Validator::make($request->all(), [
@@ -227,14 +251,13 @@ Route::post('/pendaftaran/store', function (Request $request) {
         $alasan = $isClosed->reason ?? 'Dokter berhalangan';
         return response()->json([
             'status' => 'error', 
-            // Pesan ini yang akan muncul di aplikasi Android
             'message' => "❌ Jadwal pada tanggal ini DITUTUP. Alasan: $alasan. Silakan pilih tanggal lain."
         ], 400);
     }
 
     // 3. PROSES PENDAFTARAN (DENGAN LOGIKA ESTIMASI WAKTU)
     try {
-        $result = DB::transaction(function () use ($request, $tanggalDipilih, $jadwalPraktek, $isClosed) {
+        $result = DB::transaction(function () use ($request, $tanggalDipilih, $jadwalPraktek) {
             
             // Ambil Data Antrian Terakhir
             $lastPendaftaran = Pendaftaran::where('nama_layanan', $request->nama_layanan)
@@ -257,10 +280,12 @@ Route::post('/pendaftaran/store', function (Request $request) {
             $waktuMulaiBasis = $scheduledStartTime->copy();
             
             if ($noAntrianBaru == 1) {
+                // Jika antrian pertama dan jam sekarang sudah lewat jam mulai, mulai dari jam sekarang
                 if ($currentTime->isAfter($scheduledStartTime) && $scheduledStartTime->isToday()) {
                     $waktuMulaiBasis = $currentTime->copy();
                 }
             } else {
+                // Jika bukan antrian pertama, mulai setelah antrian sebelumnya selesai
                 if ($lastPendaftaran && $lastPendaftaran->estimasi_dilayani) {
                     $waktuMulaiBasis = Carbon::parse($tanggalDipilih . ' ' . $lastPendaftaran->estimasi_dilayani);
                 }
@@ -268,6 +293,7 @@ Route::post('/pendaftaran/store', function (Request $request) {
 
             $estimasiSelesai = $waktuMulaiBasis->addMinutes($waktuPelayananPerPasien);
             
+            // Validasi: Apakah estimasi selesai melebihi jam operasional?
             if ($estimasiSelesai->isAfter($scheduledEndTime)) {
                 return ['status' => 'error', 'message' => 'Antrian sudah penuh untuk jadwal ini.'];
             }
@@ -299,9 +325,11 @@ Route::post('/pendaftaran/store', function (Request $request) {
         return response()->json(['status' => 'error', 'message' => 'Gagal memproses pendaftaran.'], 500);
     }
 });
-// ROUTE: Cek Ketersediaan Dokter untuk Pasien Mobile
+
+// ROUTE: Cek Ketersediaan Dokter untuk Pasien Mobile (Optional jika pakai BookingController)
 Route::get('/dokter/check-availability', [BookingController::class, 'checkDoctorAvailability']);
 
+// --- GET JADWAL HARI INI ---
 Route::get('/jadwal-hari-ini', function () {
     $englishDay = date('l'); 
     $hariIndo = [
@@ -329,6 +357,7 @@ Route::get('/jadwal-hari-ini', function () {
     ]);
 });
 
+// --- GET SEMUA JADWAL ---
 Route::get('/jadwal-semua', function () {
     $jadwal = DB::table('jadwal_prakteks')
         ->join('tenaga_medis', 'jadwal_prakteks.tenaga_medis_id', '=', 'tenaga_medis.id')
@@ -384,7 +413,7 @@ Route::post('/profil/update', function (Request $request) {
         'no_hp' => 'nullable|string',
         'alamat' => 'nullable|string',
         'tanggal_lahir' => 'required|date',
-        'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+        'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:10240'
     ]);
     
     if ($validator->fails()) {
@@ -401,9 +430,10 @@ Route::post('/profil/update', function (Request $request) {
     // 3. Update Foto (Jika ada file 'photo' yang diupload)
     if ($request->hasFile('photo')) {
         try {
-            if ($user->profile_photo_path) {
-                // Storage::disk('public')->delete($user->profile_photo_path);
-            }
+            // Hapus foto lama jika perlu (opsional)
+            // if ($user->profile_photo_path) {
+            //     Storage::disk('public')->delete($user->profile_photo_path);
+            // }
             
             $path = $request->file('photo')->store('profile-photos', 'public');
             $user->profile_photo_path = $path;
@@ -522,7 +552,8 @@ Route::get('/dashboard-mobile', function (Request $request) {
 
     // --- 2. ANTRIAN AKTIF PASIEN (Antrian pasien yang sedang login) ---
     $antrianAktif = Pendaftaran::where('user_id', $userId)
-        ->whereIn('status', ['menunggu', 'hadir', 'dilayani', 'periksa awal']) // FIX: Tambah 'hadir'
+        // Ambil status antrian yang masih berjalan (belum selesai/batal)
+        ->whereIn('status', ['menunggu', 'hadir', 'dilayani', 'periksa awal']) 
         ->whereDate('jadwal_dipilih', '=', Carbon::today()) 
         ->join('jadwal_prakteks', 'pendaftarans.jadwal_praktek_id', '=', 'jadwal_prakteks.id')
         ->join('tenaga_medis', 'jadwal_prakteks.tenaga_medis_id', '=', 'tenaga_medis.id')
