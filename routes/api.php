@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Pendaftaran;
 use App\Models\Pemeriksaan;
 use Carbon\Carbon;
+use App\Models\Message;
 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -551,14 +552,15 @@ Route::get('/dashboard-mobile', function (Request $request) {
     })->distinct('tenaga_medis_id')->count('tenaga_medis_id');
 
     // --- 2. ANTRIAN AKTIF PASIEN (Antrian pasien yang sedang login) ---
+// --- 2. ANTRIAN AKTIF PASIEN (Antrian pasien yang sedang login) ---
     $antrianAktif = Pendaftaran::where('user_id', $userId)
-        // Ambil status antrian yang masih berjalan (belum selesai/batal)
         ->whereIn('status', ['menunggu', 'hadir', 'dilayani', 'periksa awal']) 
         ->whereDate('jadwal_dipilih', '=', Carbon::today()) 
         ->join('jadwal_prakteks', 'pendaftarans.jadwal_praktek_id', '=', 'jadwal_prakteks.id')
         ->join('tenaga_medis', 'jadwal_prakteks.tenaga_medis_id', '=', 'tenaga_medis.id')
         ->select(
             'pendaftarans.status',
+            'pendaftarans.status_panggilan', // <--- WAJIB DITAMBAHKAN
             'tenaga_medis.name as dokter_name',
             'pendaftarans.no_antrian',
             'pendaftarans.estimasi_dilayani',
@@ -568,13 +570,25 @@ Route::get('/dashboard-mobile', function (Request $request) {
         ->first(); 
     
     // Konversi Antrian Aktif Pasien ke array
-    $antrianData = $antrianAktif ? [
-        'status' => $antrianAktif->status,
-        'dokter_name' => $antrianAktif->dokter_name,
-        'no_antrian' => $antrianAktif->no_antrian,
-        'estimasi_dilayani' => $antrianAktif->estimasi_dilayani,
-        'terakhir_diperbarui' => $antrianAktif->terakhir_diperbarui ? Carbon::parse($antrianAktif->terakhir_diperbarui)->format('H:i:s') : null
-    ] : null; 
+    $antrianData = null;
+    if ($antrianAktif) {
+        // LOGIKA PENTING:
+        // Jika status_panggilan adalah 'dipanggil', kita paksa kirim status ini ke Android
+        // agar Android membunyikan alarm.
+        $statusFinal = $antrianAktif->status;
+        
+        if ($antrianAktif->status_panggilan == 'dipanggil' || $antrianAktif->status_panggilan == 'memanggil') {
+            $statusFinal = 'dipanggil';
+        }
+
+        $antrianData = [
+            'status' => $statusFinal, // Ini yang dibaca Android
+            'dokter_name' => $antrianAktif->dokter_name,
+            'no_antrian' => $antrianAktif->no_antrian,
+            'estimasi_dilayani' => $antrianAktif->estimasi_dilayani,
+            'terakhir_diperbarui' => $antrianAktif->terakhir_diperbarui ? Carbon::parse($antrianAktif->terakhir_diperbarui)->format('H:i:s') : null
+        ];
+    }
 
     // =======================================================
     // FIX KRITIS: MENGAMBIL ANTRIAN YANG SEDANG DILAYANI/DIPROSES KLINIK (GLOBAL)
@@ -601,6 +615,15 @@ Route::get('/dashboard-mobile', function (Request $request) {
         'nama_layanan' => $antrianDilayaniGlobal->nama_layanan
     ] : null;
 
+    // 4. 🔥 HITUNG CHAT BELUM DIBACA (UNREAD BADGE)
+    $unreadChatCount = 0;
+    if ($userId) {
+        $unreadChatCount = Message::where('receiver_id', $userId)
+            ->where('receiver_type', 'user') 
+            ->where('is_read', false)
+            ->count();
+    }
+
     // --- 3. INFORMASI KLINIK (Hardcoded) ---
     $infoKlinik = [
         'jam_operasional' => '16.00 - 20.00 WIB',
@@ -614,6 +637,8 @@ Route::get('/dashboard-mobile', function (Request $request) {
         'data' => [
             'pemeriksaan_selesai' => $pemeriksaanSelesai,
             'dokter_dikunjungi' => $dokterDikunjungi,
+
+            'unread_chat_count' => $unreadChatCount,
             
             // Antrian Pasien yang Sedang Login
             'antrian_aktif' => $antrianData,
