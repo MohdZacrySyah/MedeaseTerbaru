@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
+
 class PendaftaranController extends Controller
 {
     /**
@@ -312,33 +313,39 @@ public function batalkanOlehPasien(Request $request, $id)
 {
     try {
         // Cari pendaftaran milik user yang sedang login
-        $pendaftaran = \App\Models\Pendaftaran::where('id', $id)
-            ->where('user_id', auth()->id())
+        $pendaftaran = Pendaftaran::where('id', $id)
+            ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        // Cek apakah status masih bisa dibatalkan
+        // Cek apakah status masih 'Menunggu'. Jika sudah dipanggil/selesai, tolak.
         if ($pendaftaran->status != 'Menunggu') {
             return response()->json([
-                'success' => false, 
-                'message' => 'Antrian tidak bisa dibatalkan karena sudah diproses atau selesai.'
+                'success' => false,
+                'message' => 'Jadwal tidak dapat dibatalkan karena status sudah: ' . $pendaftaran->status
             ], 400);
         }
 
-        // Update status
-        $pendaftaran->status = 'Dibatalkan';
-        $pendaftaran->status_panggilan = 'dibatalkan';
-        $pendaftaran->alasan_pembatalan = $request->alasan ?? 'Dibatalkan sendiri oleh pasien';
-        $pendaftaran->save();
+        // Validasi alasan (opsional, tapi bagus untuk data)
+        $request->validate([
+            'alasan' => 'required|string|max:255',
+        ]);
 
-        // (Opsional) Anda bisa mengirim notifikasi ke Admin/Dokter disini jika perlu
+        // Update Data
+        $pendaftaran->update([
+            'status' => 'Dibatalkan',
+            'status_panggilan' => 'dibatalkan',
+            'alasan_pembatalan' => 'Dibatalkan Pasien: ' . $request->alasan
+        ]);
 
         return response()->json([
-            'success' => true, 
+            'success' => true,
             'message' => 'Jadwal berhasil dibatalkan.'
         ]);
 
     } catch (\Exception $e) {
-        return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem'], 500);
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
     }
-}
-}
+}}
