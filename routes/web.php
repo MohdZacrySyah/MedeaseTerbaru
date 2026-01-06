@@ -80,7 +80,8 @@ Route::controller(PendaftaranController::class)->group(function () {
 */
 Route::middleware(['auth'])->group(function () {
     Route::get('/api/patient/check-notif', [AuthController::class, 'checkNotif'])->name('api.patient.check_notif');
-    
+    Route::post('/pendaftaran/batal-pasien/{id}', [App\Http\Controllers\PendaftaranController::class, 'batalkanOlehPasien'])
+        ->name('pendaftaran.batal.pasien');
     Route::controller(AuthController::class)->group(function () {
         Route::get('/dashboard', 'dashboard')->name('dashboard');
         Route::get('/profil', 'showProfile')->name('profil');

@@ -25,6 +25,7 @@ class Pendaftaran extends Model
         'estimasi_dilayani', // <--- Tambahkan ini
         'status_panggilan',
         'jumlah_panggilan',
+        'alasan_pembatalan', // <--- TAMBAHKAN INI
 
     ];
 

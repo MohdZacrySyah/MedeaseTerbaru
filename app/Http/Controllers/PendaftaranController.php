@@ -306,4 +306,39 @@ class PendaftaranController extends Controller
     {
         return $this->stopAlarmPasien($id);
     }
+    // Tambahkan method ini di PendaftaranController
+
+public function batalkanOlehPasien(Request $request, $id)
+{
+    try {
+        // Cari pendaftaran milik user yang sedang login
+        $pendaftaran = \App\Models\Pendaftaran::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        // Cek apakah status masih bisa dibatalkan
+        if ($pendaftaran->status != 'Menunggu') {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Antrian tidak bisa dibatalkan karena sudah diproses atau selesai.'
+            ], 400);
+        }
+
+        // Update status
+        $pendaftaran->status = 'Dibatalkan';
+        $pendaftaran->status_panggilan = 'dibatalkan';
+        $pendaftaran->alasan_pembatalan = $request->alasan ?? 'Dibatalkan sendiri oleh pasien';
+        $pendaftaran->save();
+
+        // (Opsional) Anda bisa mengirim notifikasi ke Admin/Dokter disini jika perlu
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'Jadwal berhasil dibatalkan.'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem'], 500);
+    }
+}
 }

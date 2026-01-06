@@ -14,6 +14,7 @@ use App\Models\TenagaMedis;
 use App\Models\DoctorAvailability;
 use Illuminate\Support\Facades\DB;
 use App\Models\Layanan;
+use App\Notifications\PendaftaranDibatalkanNotification; // <--- Import ini
 
 class AdminController extends Controller
 {
@@ -255,19 +256,30 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
-    public function batalkanPasien(Request $request, $id)
+   public function batalkanPasien(Request $request, $id)
     {
         try {
+            // Validasi input alasan
+            $request->validate([
+                'alasan' => 'required|string|max:255'
+            ]);
+
             $pendaftaran = Pendaftaran::findOrFail($id);
             
-            // Ubah status utama dan status panggilan
+            // Ubah status dan simpan alasan
             $pendaftaran->status = 'Dibatalkan';
             $pendaftaran->status_panggilan = 'dibatalkan';
+            $pendaftaran->alasan_pembatalan = $request->alasan;
             $pendaftaran->save();
+
+            // Kirim Notifikasi ke Pasien
+            if ($pendaftaran->user) {
+                $pendaftaran->user->notify(new PendaftaranDibatalkanNotification($pendaftaran, $request->alasan));
+            }
 
             return response()->json([
                 'success' => true, 
-                'message' => 'Pendaftaran pasien berhasil dibatalkan.'
+                'message' => 'Pendaftaran dibatalkan dan notifikasi dikirim ke pasien.'
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);

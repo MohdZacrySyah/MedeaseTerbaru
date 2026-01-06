@@ -2080,15 +2080,29 @@
     window.batalkanPasien = function(id) {
         Swal.fire({
             title: 'Batalkan Pendaftaran?',
-            text: "Status akan diubah menjadi 'Dibatalkan' dan pasien dihapus dari antrian aktif.",
+            text: "Masukkan alasan pembatalan untuk memberitahu pasien.",
             icon: 'warning',
+            input: 'textarea', // Menambahkan input text area
+            inputLabel: 'Alasan Pembatalan',
+            inputPlaceholder: 'Contoh: Dokter berhalangan hadir mendadak...',
+            inputAttributes: {
+                'aria-label': 'Tulis alasan pembatalan disini'
+            },
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
             cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Ya, Batalkan',
-            cancelButtonText: 'Tidak'
+            confirmButtonText: 'Ya, Batalkan & Kirim Notifikasi',
+            cancelButtonText: 'Batal',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Anda harus menuliskan alasan pembatalan!'
+                }
+            }
         }).then((result) => {
             if (result.isConfirmed) {
+                // Ambil nilai input alasan
+                const alasanPembatalan = result.value;
+
                 // Tampilkan loading
                 Swal.fire({
                     title: 'Memproses...',
@@ -2101,16 +2115,20 @@
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    // Kirim alasan dalam body request
+                    body: JSON.stringify({ 
+                        alasan: alasanPembatalan 
+                    })
                 })
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
                         Swal.fire({
                             title: 'Berhasil!',
-                            text: 'Pendaftaran berhasil dibatalkan.',
+                            text: 'Pendaftaran dibatalkan & notifikasi terkirim.',
                             icon: 'success',
-                            timer: 1500,
+                            timer: 2000,
                             showConfirmButton: false
                         });
                         window.forceRefreshQueueData();
@@ -2119,6 +2137,7 @@
                     }
                 })
                 .catch(err => {
+                    console.error(err);
                     Swal.fire('Error', 'Koneksi gagal', 'error');
                 });
             }
