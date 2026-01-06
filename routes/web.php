@@ -162,6 +162,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/tandai-hadir/{id}', 'tandaiHadir')->name('tandai.hadir');
         Route::post('/stop-panggil/{id}', 'stopPanggil')->name('stop.panggil');
         Route::post('/alihkan-pasien/{id}', 'alihkanPasien')->name('alihkan.pasien');
+
+        Route::post('/batalkan-pasien/{id}', 'batalkanPasien')->name('batalkan.pasien');
     });
     Route::get('/api/check-notif', [AdminController::class, 'checkNotif'])->name('api.check_notif');
     Route::resource('tenaga-medis', AdminTenagaMedisController::class); 

@@ -255,6 +255,24 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+    public function batalkanPasien(Request $request, $id)
+    {
+        try {
+            $pendaftaran = Pendaftaran::findOrFail($id);
+            
+            // Ubah status utama dan status panggilan
+            $pendaftaran->status = 'Dibatalkan';
+            $pendaftaran->status_panggilan = 'dibatalkan';
+            $pendaftaran->save();
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Pendaftaran pasien berhasil dibatalkan.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 
     // ==========================================
     // LAPORAN & RIWAYAT

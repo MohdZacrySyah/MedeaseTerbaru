@@ -170,6 +170,10 @@
                                                         <span class="status-badge-modern status-done">
                                                             <i class="fas fa-check-circle"></i> Selesai
                                                         </span>
+                                                    @elseif($pendaftaran->status == 'Dibatalkan')
+                                                        <span class="status-badge-modern" style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;">
+                                                            <i class="fas fa-times-circle"></i> Dibatalkan
+                                                        </span>
                                                     @else
                                                         <span class="status-badge-modern status-waiting">
                                                             {{ $pendaftaran->status }}
@@ -208,10 +212,19 @@
                                                                     <i class="fas fa-forward"></i> Skip
                                                                 </button>
                                                             @endif
+                                                            
+                                                            {{-- Tombol Batal --}}
+                                                            <button onclick="batalkanPasien({{ $pendaftaran->id }})" class="btn-cancel-modern" title="Batalkan Pendaftaran">
+                                                                <i class="fas fa-times-circle"></i> Batal
+                                                            </button>
                                                         </div>
                                                     @elseif($pendaftaran->status == 'Hadir')
                                                         <span style="font-size: 0.85rem; color: #155724; font-weight:600;">
                                                             <i class="fas fa-check"></i> Pasien Hadir
+                                                        </span>
+                                                    @elseif($pendaftaran->status == 'Dibatalkan')
+                                                        <span style="font-size: 0.85rem; color: #dc2626; font-style: italic;">
+                                                            <i class="fas fa-ban"></i> Antrian Dibatalkan
                                                         </span>
                                                     @else
                                                         <span style="font-size: 0.85rem; font-style: italic; color: var(--text-muted);">-</span>
@@ -234,6 +247,10 @@
                                                     @elseif($pendaftaran->status == 'Selesai')
                                                         <button type="button" class="btn-action-disabled" disabled>
                                                             <i class="fas fa-check-double"></i> Selesai
+                                                        </button>
+                                                    @elseif($pendaftaran->status == 'Dibatalkan')
+                                                        <button type="button" class="btn-action-disabled" disabled>
+                                                            <i class="fas fa-times"></i> Dibatalkan
                                                         </button>
                                                     @else
                                                         <button class="btn-action-disabled" disabled title="Panggil dan konfirmasi hadir terlebih dahulu">
@@ -1125,6 +1142,28 @@
         box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4); 
     }
 
+    .btn-cancel-modern {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 14px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .btn-cancel-modern:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4); 
+    }
+
     .badge-call-status {
         font-size: 0.8rem;
         padding: 6px 12px;
@@ -1568,7 +1607,8 @@
         
         .btn-call-modern, 
         .btn-stop-call, 
-        .btn-skip-modern { 
+        .btn-skip-modern,
+        .btn-cancel-modern { 
             width: 100%; 
             justify-content: center; 
             padding: 10px 18px;
@@ -1745,7 +1785,8 @@
 
         .btn-call-modern,
         .btn-stop-call,
-        .btn-skip-modern {
+        .btn-skip-modern,
+        .btn-cancel-modern {
             font-size: 0.85rem;
             padding: 9px 16px;
         }
@@ -2027,6 +2068,54 @@
                 .then(data => {
                     if(data.success) {
                         window.forceRefreshQueueData();
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Error', 'Koneksi gagal', 'error');
+                });
+            }
+        });
+    }
+
+    window.batalkanPasien = function(id) {
+        Swal.fire({
+            title: 'Batalkan Pendaftaran?',
+            text: "Status akan diubah menjadi 'Dibatalkan' dan pasien dihapus dari antrian aktif.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Ya, Batalkan',
+            cancelButtonText: 'Tidak'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Tampilkan loading
+                Swal.fire({
+                    title: 'Memproses...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading() }
+                });
+
+                fetch(`/admin/batalkan-pasien/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Pendaftaran berhasil dibatalkan.',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        window.forceRefreshQueueData();
+                    } else {
+                        Swal.fire('Error', data.message || 'Gagal membatalkan', 'error');
                     }
                 })
                 .catch(err => {
