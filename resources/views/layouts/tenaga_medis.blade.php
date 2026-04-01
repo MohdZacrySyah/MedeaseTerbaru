@@ -255,7 +255,7 @@
                 <div class="brand-logo">
                     <img src="{{ asset('images/logo.png') }}" alt="Logo Praktek Bersama">
                 </div>
-                <div class="brand-text">Praktek Bersama</div>
+                <div class="brand-text">MedEase</div>
                 <div class="brand-subtitle">Panel Tenaga Medis</div>
             </a>
         </div>

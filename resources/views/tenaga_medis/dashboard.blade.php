@@ -159,7 +159,7 @@
                             </div>
                             <div class="info-text">
                                 <span class="label">Jam Operasional</span>
-                                <span class="value">16.00 - 20.00 WIB</span>
+                                <span class="value">08.00 - 20.00 WIB</span>
                             </div>
                         </div>
                         <div class="info-row clinic-row">
@@ -168,7 +168,7 @@
                             </div>
                             <div class="info-text">
                                 <span class="label">Kontak Kami</span>
-                                <span class="value">0822 1117 8167</span>
+                                <span class="value">0822 5846 8728</span>
                             </div>
                         </div>
                         <div class="info-row clinic-row">
@@ -177,7 +177,7 @@
                             </div>
                             <div class="info-text">
                                 <span class="label">Alamat Klinik</span>
-                                <span class="value">Jl. I. Mohammad Ali, Bengkalis, Riau</span>
+                                <span class="value">Jl.Bengkalis, Riau</span>
                             </div>
                         </div>
                     </div>

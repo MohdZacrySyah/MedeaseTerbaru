@@ -7,6 +7,7 @@ use App\Models\Pendaftaran;
 use App\Models\DoctorAvailability;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB; // 🔥 WAJIB ADA untuk DB::transaction
 use Carbon\Carbon;
 
 
@@ -205,7 +206,7 @@ class PendaftaranController extends Controller
         // ==========================================
         // 🔥 LOGIKA PENYIMPANAN DATA 🔥
         // ==========================================
-
+ 
         // Inisialisasi object dengan data validasi
         $pendaftaran = new Pendaftaran($validatedData);
 
@@ -307,45 +308,79 @@ class PendaftaranController extends Controller
     {
         return $this->stopAlarmPasien($id);
     }
-    // Tambahkan method ini di PendaftaranController
 
-public function batalkanOlehPasien(Request $request, $id)
-{
-    try {
-        // Cari pendaftaran milik user yang sedang login
-        $pendaftaran = Pendaftaran::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
+    // ==========================================
+    // 🔥 PEMBATALAN OLEH PASIEN + GESER ANTRIAN 🔥
+    // ==========================================
+    public function batalkanOlehPasien(Request $request, $id)
+    {
+        return DB::transaction(function () use ($request, $id) {
+            try {
+                // Cari pendaftaran milik user yang sedang login
+                $pendaftaran = Pendaftaran::where('id', $id)
+                    ->where('user_id', Auth::id())
+                    ->firstOrFail();
 
-        // Cek apakah status masih 'Menunggu'. Jika sudah dipanggil/selesai, tolak.
-        if ($pendaftaran->status != 'Menunggu') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Jadwal tidak dapat dibatalkan karena status sudah: ' . $pendaftaran->status
-            ], 400);
-        }
+                // Cek apakah status masih 'Menunggu'. Jika sudah dipanggil/selesai, tolak.
+                if ($pendaftaran->status != 'Menunggu') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Jadwal tidak dapat dibatalkan karena status sudah: ' . $pendaftaran->status
+                    ], 400);
+                }
 
-        // Validasi alasan (opsional, tapi bagus untuk data)
-        $request->validate([
-            'alasan' => 'required|string|max:255',
-        ]);
+                // Validasi alasan
+                $request->validate([
+                    'alasan' => 'required|string|max:255',
+                ]);
 
-        // Update Data
-        $pendaftaran->update([
-            'status' => 'Dibatalkan',
-            'status_panggilan' => 'dibatalkan',
-            'alasan_pembatalan' => 'Dibatalkan Pasien: ' . $request->alasan
-        ]);
+                // Simpan info untuk logic geser
+                $noAntrianLama = $pendaftaran->no_antrian;
+                $jadwalId = $pendaftaran->jadwal_praktek_id;
+                $tanggal = $pendaftaran->jadwal_dipilih;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Jadwal berhasil dibatalkan.'
-        ]);
+                // 1. Update Data Pasien (Batal)
+                $pendaftaran->update([
+                    'status' => 'Dibatalkan',
+                    'status_panggilan' => 'dibatalkan',
+                    'alasan_pembatalan' => 'Dibatalkan Pasien: ' . $request->alasan
+                ]);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-        ], 500);
+                // 2. LOGIKA GESER ANTRIAN OTOMATIS
+                // Cari semua antrian di belakangnya (nomor lebih besar) pada jadwal yang sama
+                $antrianBelakang = Pendaftaran::where('jadwal_praktek_id', $jadwalId)
+                    ->whereDate('jadwal_dipilih', $tanggal)
+                    ->where('no_antrian', '>', $noAntrianLama)
+                    ->where('status', '!=', 'Dibatalkan') // Jangan geser yang sudah batal
+                    ->orderBy('no_antrian', 'asc')
+                    ->lockForUpdate() // Kunci agar aman saat trafik tinggi
+                    ->get();
+
+                foreach ($antrianBelakang as $pasien) {
+                    // Geser Nomor (Maju 1)
+                    $pasien->no_antrian = $pasien->no_antrian - 1;
+
+                    // Geser Waktu (Maju 20 menit)
+                    if ($pasien->estimasi_dilayani) {
+                        $pasien->estimasi_dilayani = Carbon::parse($pasien->estimasi_dilayani)
+                            ->subMinutes(20) // Asumsi durasi per pasien 20 menit
+                            ->format('H:i:s');
+                    }
+                    
+                    $pasien->save();
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Jadwal berhasil dibatalkan. Antrian lain telah disesuaikan.'
+                ]);
+
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ], 500);
+            }
+        });
     }
-}}
+}

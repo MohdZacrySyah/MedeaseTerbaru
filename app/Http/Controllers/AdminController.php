@@ -258,34 +258,74 @@ class AdminController extends Controller
     }
    public function batalkanPasien(Request $request, $id)
     {
-        try {
-            // Validasi input alasan
-            $request->validate([
-                'alasan' => 'required|string|max:255'
-            ]);
+        // Gunakan Transaction agar data konsisten (semua sukses atau semua gagal)
+        return DB::transaction(function () use ($request, $id) {
+            try {
+                // Validasi input alasan
+                $request->validate([
+                    'alasan' => 'required|string|max:255'
+                ]);
 
-            $pendaftaran = Pendaftaran::findOrFail($id);
-            
-            // Ubah status dan simpan alasan
-            $pendaftaran->status = 'Dibatalkan';
-            $pendaftaran->status_panggilan = 'dibatalkan';
-            $pendaftaran->alasan_pembatalan = $request->alasan;
-            $pendaftaran->save();
+                $pendaftaran = Pendaftaran::findOrFail($id);
+                
+                // Cek status agar tidak membatalkan yang sudah batal/selesai (Opsional, untuk keamanan)
+                if (in_array($pendaftaran->status, ['Selesai', 'Dibatalkan'])) {
+                    return response()->json([
+                        'success' => false, 
+                        'message' => 'Pasien sudah selesai atau sudah dibatalkan sebelumnya.'
+                    ], 400);
+                }
 
-            // Kirim Notifikasi ke Pasien
-            if ($pendaftaran->user) {
-                $pendaftaran->user->notify(new PendaftaranDibatalkanNotification($pendaftaran, $request->alasan));
+                // --- 1. SIMPAN DATA LAMA UNTUK ACUAN GESER ---
+                $noAntrianLama = $pendaftaran->no_antrian;
+                $jadwalId = $pendaftaran->jadwal_praktek_id;
+                $tanggal = $pendaftaran->jadwal_dipilih;
+
+                // --- 2. UBAH STATUS MENJADI BATAL ---
+                $pendaftaran->status = 'Dibatalkan';
+                $pendaftaran->status_panggilan = 'dibatalkan';
+                $pendaftaran->alasan_pembatalan = 'Dibatalkan Admin: ' . $request->alasan;
+                $pendaftaran->save();
+
+                // Kirim Notifikasi ke Pasien
+                if ($pendaftaran->user) {
+                    $pendaftaran->user->notify(new PendaftaranDibatalkanNotification($pendaftaran, $request->alasan));
+                }
+
+                // --- 3. LOGIKA GESER ANTRIAN (SAMA SEPERTI DI PASIEN) ---
+                // Ambil semua pasien di jadwal & tanggal sama yang nomor antriannya DI BELAKANG pasien ini
+                // Dan Statusnya BUKAN 'Dibatalkan' (Hanya geser yang masih aktif)
+                $antrianBelakang = Pendaftaran::where('jadwal_praktek_id', $jadwalId)
+                    ->whereDate('jadwal_dipilih', $tanggal)
+                    ->where('no_antrian', '>', $noAntrianLama)
+                    ->where('status', '!=', 'Dibatalkan') 
+                    ->orderBy('no_antrian', 'asc')
+                    ->lockForUpdate() // Kunci baris data agar tidak bentrok saat trafik tinggi
+                    ->get();
+
+                foreach ($antrianBelakang as $pasien) {
+                    // Kurangi nomor antrian (Contoh: No 4 jadi 3)
+                    $pasien->no_antrian = $pasien->no_antrian - 1;
+
+                    // Majukan Estimasi Waktu (Kurangi 20 Menit)
+                    if ($pasien->estimasi_dilayani) {
+                        $pasien->estimasi_dilayani = Carbon::parse($pasien->estimasi_dilayani)
+                            ->subMinutes(20)
+                            ->format('H:i:s');
+                    }
+                    
+                    $pasien->save();
+                }
+
+                return response()->json([
+                    'success' => true, 
+                    'message' => 'Pendaftaran dibatalkan. Antrian di belakangnya otomatis maju.'
+                ]);
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
-
-            return response()->json([
-                'success' => true, 
-                'message' => 'Pendaftaran dibatalkan dan notifikasi dikirim ke pasien.'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
+        });
     }
-
     // ==========================================
     // LAPORAN & RIWAYAT
     // ==========================================

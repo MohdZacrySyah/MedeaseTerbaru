@@ -733,7 +733,7 @@
         <div class="sidebar-brand">
             <a href="{{ route('admin.dashboard') }}">
                 <div class="brand-logo"><img src="{{ asset('images/logo.png') }}" alt="Logo"></div>
-                <div class="brand-text">Praktek Bersama</div>
+                <div class="brand-text">MedEase</div>
                 <div class="brand-subtitle">Panel Admin</div>
             </a>
         </div>

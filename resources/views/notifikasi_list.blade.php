@@ -3,6 +3,9 @@
 
 @push('styles')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    {{-- SweetAlert2 CSS (Optional, jika belum ada di layout main) --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
 <style>
     * { 
         box-sizing: border-box; 
@@ -849,6 +852,31 @@
         height: 28px;
     }
 
+    /* --- STYLE TOMBOL BATAL (TAMBAHAN) --- */
+    .btn-cancel-ticket {
+        display: none; /* Default hidden, muncul via JS jika status valid */
+        width: 100%;
+        padding: 14px;
+        margin-top: 20px;
+        background: #fee2e2;
+        color: #ef4444;
+        border: 1px dashed #ef4444;
+        border-radius: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-cancel-ticket:hover {
+        background: #ef4444;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
     @media (max-width: 768px) {
         .header-content {
             flex-direction: column;
@@ -997,7 +1025,10 @@
                  data-dokter="{{ $item->dokter_name }}"
                  data-is-batal="{{ $isCancellation ? 'true' : 'false' }}"
                  data-pesan="{{ $item->message }}"
-                 data-is-unread="{{ $isUnread ? 'true' : 'false' }}">
+                 data-is-unread="{{ $isUnread ? 'true' : 'false' }}"
+                 {{-- DATA TAMBAHAN UNTUK PEMBATALAN --}}
+                 data-pendaftaran-id="{{ $isPendaftaran ? ($item->raw_pendaftaran->id ?? '') : '' }}"
+                 data-status-raw="{{ $isPendaftaran ? ($item->raw_pendaftaran->status ?? '') : '' }}">
                 
                 <div class="notifikasi-card-inner">
                     <div class="card-left-accent"></div>
@@ -1160,6 +1191,12 @@
                         </div>
                     </div>
                 </div>
+                
+                {{-- TOMBOL PEMBATALAN --}}
+                <button type="button" id="btnCancelJadwal" class="btn-cancel-ticket">
+                    <i class="fas fa-times-circle"></i>
+                    Batalkan Jadwal Ini
+                </button>
             </div>
             
             <div class="ticket-footer">
@@ -1189,10 +1226,16 @@
 
 
 @push('scripts')
+{{-- Load SweetAlert2 JS --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('detailModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
+    
+    // Element Tombol Batal
+    const btnCancelJadwal = document.getElementById('btnCancelJadwal');
+    let currentPendaftaranId = null;
     
     // --- AUTO REFRESH LOGIC ---
     if (typeof window.initAutoRefresh === 'function') {
@@ -1238,8 +1281,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const estimasiRow = document.getElementById('modalEstimasiRow');
         const isCancellation = data.isBatal === 'true';
 
+        // Reset Styles
         ticketCard.classList.remove('cancellation-style');
         
+        // Isi Data Modal
         document.getElementById('modalTanggal').textContent = data.tanggal;
         document.getElementById('modalLayanan').textContent = data.layanan;
         document.getElementById('modalDokter').textContent = data.dokter.split('(')[0].trim();
@@ -1251,6 +1296,7 @@ document.addEventListener('DOMContentLoaded', function () {
             estimasiRow.style.display = 'none';
         }
         
+        // Logic Tampilan Pembatalan vs Normal
         if (isCancellation) {
             ticketCard.classList.add('cancellation-style');
             antrianEl.textContent = 'BATAL';
@@ -1260,12 +1306,25 @@ document.addEventListener('DOMContentLoaded', function () {
             messageRow.style.display = 'flex';
             estimasiRow.style.display = 'none';
             document.getElementById('modalFooterText').textContent = '⚠️ Mohon segera buat jadwal baru';
+            
+            // Sembunyikan tombol batal jika notifikasi itu sendiri adalah pembatalan
+            btnCancelJadwal.style.display = 'none';
         } else {
             antrianEl.textContent = data.antrian === '-' ? 'N/A' : data.antrian;
             document.getElementById('modalQueueLabel').textContent = 'NOMOR ANTRIAN';
             document.getElementById('modalTicketType').textContent = 'Tiket Konsultasi';
             messageRow.style.display = 'none';
             document.getElementById('modalFooterText').textContent = 'Harap datang sesuai jadwal yang telah ditentukan';
+
+            // 🔥 LOGIC TOMBOL BATAL 🔥
+            // Tombol hanya muncul jika Tipe = Pendaftaran DAN Status = Menunggu
+            if (data.modalType === 'pendaftaran' && data.statusRaw === 'Menunggu') {
+                btnCancelJadwal.style.display = 'flex';
+                currentPendaftaranId = data.pendaftaranId; // Simpan ID untuk diproses
+            } else {
+                btnCancelJadwal.style.display = 'none';
+                currentPendaftaranId = null;
+            }
         }
         
         modal.style.display = 'flex';
@@ -1294,6 +1353,88 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
         }
+    }
+
+    // 🔥 EVENT LISTENER TOMBOL BATALKAN 🔥
+    if(btnCancelJadwal) {
+        btnCancelJadwal.addEventListener('click', function() {
+            if(!currentPendaftaranId) return;
+
+            // Gunakan SweetAlert jika ada, atau fallback ke prompt biasa
+            if(typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Batalkan Jadwal?',
+                    text: "Apakah Anda yakin ingin membatalkan pendaftaran ini? Berikan alasannya:",
+                    input: 'text',
+                    inputPlaceholder: 'Contoh: Ada urusan mendadak',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, Batalkan',
+                    cancelButtonText: 'Tutup',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'Anda harus menuliskan alasan pembatalan!'
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        prosesPembatalan(currentPendaftaranId, result.value);
+                    }
+                });
+            } else {
+                // Fallback jika SweetAlert tidak diload
+                let alasan = prompt("Masukkan alasan pembatalan:");
+                if (alasan) {
+                    prosesPembatalan(currentPendaftaranId, alasan);
+                }
+            }
+        });
+    }
+
+    function prosesPembatalan(id, alasan) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Tampilkan Loading pada tombol
+        const originalText = btnCancelJadwal.innerHTML;
+        btnCancelJadwal.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+        btnCancelJadwal.disabled = true;
+
+        fetch(`/pendaftaran/batal-pasien/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({ alasan: alasan })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                if(typeof Swal !== 'undefined') {
+                    Swal.fire('Berhasil!', 'Jadwal berhasil dibatalkan.', 'success').then(() => {
+                        window.location.reload(); // Reload halaman untuk update list
+                    });
+                } else {
+                    alert('Jadwal berhasil dibatalkan.');
+                    window.location.reload();
+                }
+            } else {
+                throw new Error(data.message || 'Terjadi kesalahan');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if(typeof Swal !== 'undefined') {
+                Swal.fire('Gagal!', error.message, 'error');
+            } else {
+                alert('Gagal: ' + error.message);
+            }
+            // Reset tombol jika gagal
+            btnCancelJadwal.innerHTML = originalText;
+            btnCancelJadwal.disabled = false;
+        });
     }
     
     if (closeModalBtn) {
