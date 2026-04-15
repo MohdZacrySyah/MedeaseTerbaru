@@ -8,7 +8,7 @@ use App\Models\Pendaftaran;
 use App\Models\JadwalPraktek;
 use App\Models\User;
 use App\Models\Pemeriksaan;
-use App\Models\Message; // 🔥 PASTIKAN MODEL MESSAGE DIIMPORT
+use App\Models\Message;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
@@ -17,14 +17,13 @@ class TenagaMedisController extends Controller
 {
     /**
      * 🔥 METHOD AJAX UNTUK LAPORAN
-     * Mengembalikan data dalam format JSON untuk dirender oleh JavaScript di client-side.
      */
     public function getLaporanDataJson(Request $request)
     {
         $tenagaMedisId = Auth::guard('tenaga_medis')->id();
         $filter = $request->input('filter', 'hari_ini'); 
         $tanggalDipilih = $request->input('tanggal');
-        $bulanDipilih = $request->input('bulan'); // Format: YYYY-MM
+        $bulanDipilih = $request->input('bulan');
 
         // --- 1. DATA KPI (STATISTIK) ---
         $kunjunganHariIni = Pemeriksaan::where('tenaga_medis_id', $tenagaMedisId)
@@ -53,10 +52,7 @@ class TenagaMedisController extends Controller
 
         // --- 3. FILTER LOGIC ---
         if ($filter == 'hari_ini') {
-            // Table Filter
             $query->whereDate('pemeriksaans.created_at', Carbon::today());
-            
-            // Chart Filter (Per Jam)
             $chartQuery = $chartQueryBase->select(DB::raw('HOUR(created_at) as label'), DB::raw('COUNT(*) as jumlah'))
                                          ->whereDate('created_at', Carbon::today())
                                          ->groupBy('label')
@@ -67,11 +63,9 @@ class TenagaMedisController extends Controller
             $chartData = $chartQuery->pluck('jumlah');
 
         } elseif ($filter == 'bulan_ini') {
-            // Table Filter
             $query->whereMonth('pemeriksaans.created_at', Carbon::now()->month)
                   ->whereYear('pemeriksaans.created_at', Carbon::now()->year);
             
-            // Chart Filter (Per Hari)
             $chartQuery = $chartQueryBase->select(DB::raw('DATE(created_at) as label'), DB::raw('COUNT(*) as jumlah'))
                                          ->whereMonth('created_at', Carbon::now()->month)
                                          ->whereYear('created_at', Carbon::now()->year)
@@ -83,10 +77,8 @@ class TenagaMedisController extends Controller
             $chartData = $chartQuery->pluck('jumlah');
 
         } elseif ($filter == 'tanggal' && $tanggalDipilih) {
-            // Table Filter
             $query->whereDate('pemeriksaans.created_at', $tanggalDipilih);
             
-            // Chart Filter (Per Jam)
             $chartQuery = $chartQueryBase->select(DB::raw('HOUR(created_at) as label'), DB::raw('COUNT(*) as jumlah'))
                                          ->whereDate('created_at', $tanggalDipilih)
                                          ->groupBy('label')
@@ -97,13 +89,10 @@ class TenagaMedisController extends Controller
             $chartData = $chartQuery->pluck('jumlah');
 
         } elseif ($filter == 'bulan_terpilih' && $bulanDipilih) {
-            $carbonBulan = Carbon::parse($bulanDipilih); // Format Y-m
-            
-            // Table Filter
+            $carbonBulan = Carbon::parse($bulanDipilih);
             $query->whereMonth('pemeriksaans.created_at', $carbonBulan->month)
                   ->whereYear('pemeriksaans.created_at', $carbonBulan->year);
             
-            // Chart Filter (Per Hari)
             $chartQuery = $chartQueryBase->select(DB::raw('DATE(created_at) as label'), DB::raw('COUNT(*) as jumlah'))
                                          ->whereMonth('created_at', $carbonBulan->month)
                                          ->whereYear('created_at', $carbonBulan->year)
@@ -114,8 +103,7 @@ class TenagaMedisController extends Controller
             $chartLabels = $chartQuery->pluck('label')->map(fn($tgl) => Carbon::parse($tgl)->format('d M'));
             $chartData = $chartQuery->pluck('jumlah');
 
-        } else { // 'semua_data'
-            // Chart Filter (Per Bulan)
+        } else { 
             $chartQuery = $chartQueryBase->select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as label'), DB::raw('COUNT(*) as jumlah'))
                                          ->groupBy('label')
                                          ->orderBy('label', 'asc')
@@ -127,15 +115,13 @@ class TenagaMedisController extends Controller
 
         $kunjunganData = $query->latest('pemeriksaans.created_at')->get();
 
-        // --- 4. FORMAT DATA JSON UNTUK TABEL (PENTING!) ---
-        // Kita ubah data collection menjadi array bersih yang siap dibaca oleh JS di frontend
+        // --- 4. FORMAT DATA JSON UNTUK TABEL ---
         $tableData = $kunjunganData->map(function($item) {
             return [
                 'pasien_id' => $item->pasien_id,
                 'nama_pasien' => $item->nama_pasien,
                 'layanan' => $item->layanan,
                 'tanggal_formatted' => Carbon::parse($item->tanggal_kunjungan)->isoFormat('DD MMM YYYY, HH:mm'),
-                // Generate URL lengkap untuk foto profil atau null jika tidak ada
                 'profile_photo_url' => $item->profile_photo_path ? asset('storage/' . $item->profile_photo_path) : null,
             ];
         });
@@ -147,7 +133,6 @@ class TenagaMedisController extends Controller
                 'bulan_ini' => $kunjunganBulanIni,
                 'total' => $semuaKunjungan
             ],
-            // 'table_data' ini yang akan dipakai oleh fungsi updateTable(data.table_data) di JS
             'table_data' => $tableData, 
             'table_count' => $kunjunganData->count(),
             'chart' => [
@@ -163,49 +148,39 @@ class TenagaMedisController extends Controller
      */
     public function dashboard()
     {
-        // --- 1. AMBIL DATA DASAR ---
         $tenagaMedis = Auth::guard('tenaga_medis')->user();
         $tenagaMedisId = $tenagaMedis->id;
         $today = Carbon::today();
         Carbon::setLocale('id');
         $namaHariIni = Carbon::now()->translatedFormat('l');
 
-        // --- 2. AMBIL LAYANAN YANG DITANGANI ---
         $layanansDitangani = JadwalPraktek::where('tenaga_medis_id', $tenagaMedisId)
                                         ->distinct()
                                         ->pluck('layanan')
                                         ->toArray();
 
-        // --- 3. DATA UNTUK KARTU KPI (RINGKASAN) ---
-        // Total pasien hari ini untuk dokter ini
         $jumlahTotalPasien = Pendaftaran::whereIn('nama_layanan', $layanansDitangani)
                                         ->whereDate('jadwal_dipilih', $today)
                                         ->count();
         
-        // Jumlah pasien yang sudah diperiksa (sudah ada di tabel pemeriksaans)
         $jumlahSelesai = Pemeriksaan::where('tenaga_medis_id', $tenagaMedisId)
                                     ->whereDate('created_at', $today)
                                     ->count();
         
-        // Jumlah pasien yang masih menunggu (Total - Selesai)
         $jumlahMenunggu = $jumlahTotalPasien - $jumlahSelesai;
 
-
-        // --- 4. DATA JADWAL PRAKTEK DOKTER HARI INI ---
         $jadwalHariIni = JadwalPraktek::where('tenaga_medis_id', $tenagaMedisId)
                                     ->whereJsonContains('hari', $namaHariIni)
                                     ->first();
 
-        // --- 5. DATA TABEL ANTRIAN (PASIEN SELANJUTNYA) ---
         $pendaftaranMenunggu = Pendaftaran::with('user')
                                         ->whereIn('nama_layanan', $layanansDitangani)
                                         ->whereDate('jadwal_dipilih', $today)
-                                        ->where('status', '!=', 'Selesai') // Ambil yang Menunggu atau Diperiksa Awal
-                                        ->orderBy('no_antrian', 'asc') // Urutkan berdasarkan no antrian
-                                        ->take(5) // Ambil 5 antrian teratas
+                                        ->where('status', '!=', 'Selesai') 
+                                        ->orderBy('no_antrian', 'asc') 
+                                        ->take(5) 
                                         ->get();
 
-        // --- 6. KIRIM SEMUA DATA KE VIEW ---
         return view('tenaga_medis.dashboard', compact(
             'tenagaMedis',
             'jumlahTotalPasien',
@@ -224,13 +199,11 @@ class TenagaMedisController extends Controller
         Carbon::setLocale('id');
         $namaHariIni = Carbon::now()->translatedFormat('l');
 
-        // 1. Ambil Layanan
         $layanansDitangani = JadwalPraktek::where('tenaga_medis_id', $tenagaMedisId)
                                         ->distinct()
                                         ->pluck('layanan')
                                         ->toArray();
 
-        // 2. Hitung Statistik
         $jumlahTotalPasien = Pendaftaran::whereIn('nama_layanan', $layanansDitangani)
                                         ->whereDate('jadwal_dipilih', $today)
                                         ->count();
@@ -241,7 +214,6 @@ class TenagaMedisController extends Controller
         
         $jumlahMenunggu = $jumlahTotalPasien - $jumlahSelesai;
 
-        // 3. Ambil Antrian (Sama seperti dashboard utama)
         $pendaftaranMenunggu = Pendaftaran::with('user')
                                         ->whereIn('nama_layanan', $layanansDitangani)
                                         ->whereDate('jadwal_dipilih', $today)
@@ -250,10 +222,8 @@ class TenagaMedisController extends Controller
                                         ->take(5)
                                         ->get();
 
-        // 4. Render HTML tabel antrian dari partial view
         $tableHtml = view('tenaga_medis.components.table_antrian', compact('pendaftaranMenunggu'))->render();
 
-        // 5. Return JSON
         return response()->json([
             'total_pasien' => $jumlahTotalPasien,
             'menunggu' => $jumlahMenunggu,
@@ -270,7 +240,7 @@ class TenagaMedisController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        $tanggal = $request->input('tanggal'); 
+        $tanggal = $request->input('tanggal', Carbon::today()->toDateString()); 
 
         $layanansDitangani = JadwalPraktek::where('tenaga_medis_id', $tenagaMedisId)
                                         ->distinct()
@@ -280,26 +250,24 @@ class TenagaMedisController extends Controller
         if (empty($layanansDitangani)) {
             $pendaftarans = collect();
         } else {
-            // [PERBAIKAN] Pastikan ->latest() SUDAH DIHAPUS agar tidak mengurutkan berdasarkan waktu input
             $query = Pendaftaran::whereIn('nama_layanan', $layanansDitangani)
-                            ->with('user');
+                            ->with(['user', 'pemeriksaanAwal']);
 
-            // Terapkan filter yang sama persis dengan halaman utama
-            if ($tanggal) {
-                $query->whereDate('jadwal_dipilih', $tanggal);
-            } else {
-                $query->where('status', '!=', 'Selesai');
-            }
+            $query->whereDate('jadwal_dipilih', $tanggal);
 
-            // [PERBAIKAN UTAMA] Urutkan hanya berdasarkan No Antrian (ASC) 
-            // agar urut 1, 2, 3... tanpa terpengaruh kapan data diinput.
-            // Jika ingin 'Hadir' tetap paling atas, kita pakai FIELD tapi prioritas antrian tetap utama.
-            
-            $pendaftarans = $query->orderBy('no_antrian', 'asc')
+            $pendaftarans = $query->select('pendaftarans.*')
+                                  ->orderByRaw("
+                                      CASE 
+                                          WHEN pendaftarans.status != 'Selesai' AND EXISTS (SELECT 1 FROM pemeriksaan_awals WHERE pemeriksaan_awals.pendaftaran_id = pendaftarans.id) THEN 1
+                                          WHEN pendaftarans.status != 'Selesai' THEN 2
+                                          WHEN pendaftarans.status = 'Selesai' THEN 3
+                                          ELSE 4
+                                      END ASC
+                                  ")
+                                  ->orderBy('no_antrian', 'asc') 
                                   ->get();
         }
 
-        // Render HTML tabel dari component
         $tableHtml = view('tenaga_medis.components.table_pasien', compact('pendaftarans'))->render();
 
         return response()->json([
@@ -343,8 +311,7 @@ class TenagaMedisController extends Controller
             return redirect()->route('tenaga-medis.login')->withErrors(['email' => 'Sesi tidak valid.']);
         }
 
-        // Ambil tanggal dari URL. Sekarang default-nya null
-        $tanggal = $request->input('tanggal'); 
+        $tanggal = $request->input('tanggal', Carbon::today()->toDateString()); 
 
         $layanansDitangani = JadwalPraktek::where('tenaga_medis_id', $tenagaMedisId)
                                         ->distinct()
@@ -354,20 +321,21 @@ class TenagaMedisController extends Controller
         if (empty($layanansDitangani)) {
             $pendaftarans = collect();
         } else {
-            // [PERBAIKAN] Hapus ->latest()
             $query = Pendaftaran::whereIn('nama_layanan', $layanansDitangani)
-                            ->with('user');
+                            ->with(['user', 'pemeriksaanAwal']);
 
-            // HANYA filter jika $tanggal ADA ISINYA
-            if ($tanggal) {
-                $query->whereDate('jadwal_dipilih', $tanggal);
-            } else {
-                // Jika tidak ada filter tanggal, tampilkan semua yang statusnya BUKAN Selesai
-                $query->where('status', '!=', 'Selesai');
-            }
+            $query->whereDate('jadwal_dipilih', $tanggal);
 
-            // [PERBAIKAN UTAMA] Sorting murni berdasarkan No Antrian (1, 2, 3...)
-            $pendaftarans = $query->orderBy('no_antrian', 'asc')
+            $pendaftarans = $query->select('pendaftarans.*')
+                                  ->orderByRaw("
+                                      CASE 
+                                          WHEN pendaftarans.status != 'Selesai' AND EXISTS (SELECT 1 FROM pemeriksaan_awals WHERE pemeriksaan_awals.pendaftaran_id = pendaftarans.id) THEN 1
+                                          WHEN pendaftarans.status != 'Selesai' THEN 2
+                                          WHEN pendaftarans.status = 'Selesai' THEN 3
+                                          ELSE 4
+                                      END ASC
+                                  ")
+                                  ->orderBy('no_antrian', 'asc')
                                   ->get();
         }
 
@@ -397,7 +365,6 @@ class TenagaMedisController extends Controller
     {
         $tenagaMedisId = Auth::guard('tenaga_medis')->id();
 
-        // Ambil filter dari request
         $tanggalFilter = $request->input('tanggal');
         $namaFilter = $request->input('nama');
 
@@ -405,12 +372,10 @@ class TenagaMedisController extends Controller
                             ->with(['pasien', 'pendaftaran.pemeriksaanAwal'])
                             ->latest('created_at');
 
-        // Terapkan filter tanggal jika ada
         if ($tanggalFilter) {
             $query->whereDate('created_at', $tanggalFilter);
         }
 
-        // Terapkan filter nama pasien jika ada
         if ($namaFilter) {
             $query->whereHas('pasien', function ($q) use ($namaFilter) {
                 $q->where('name', 'like', '%' . $namaFilter . '%');
@@ -423,13 +388,11 @@ class TenagaMedisController extends Controller
 
     public function laporan(Request $request)
     {
-        // --- 1. AMBIL DATA DASAR & FILTER ---
         $tenagaMedisId = Auth::guard('tenaga_medis')->id();
         $filter = $request->input('filter', 'bulan_ini'); 
         $tanggalDipilih = $request->input('tanggal', Carbon::today()->toDateString());
         $bulanDipilih = $request->input('bulan', Carbon::now()->format('Y-m')); 
 
-        // --- 2. DATA UNTUK KARTU KPI (KHUSUS TENAGA MEDIS INI) ---
         $kunjunganHariIni = Pemeriksaan::where('tenaga_medis_id', $tenagaMedisId)
                                        ->whereDate('created_at', Carbon::today())->count();
         $kunjunganBulanIni = Pemeriksaan::where('tenaga_medis_id', $tenagaMedisId)
@@ -438,7 +401,6 @@ class TenagaMedisController extends Controller
                                         ->count();
         $semuaKunjungan = Pemeriksaan::where('tenaga_medis_id', $tenagaMedisId)->count();
 
-        // --- 3. DATA UNTUK TABEL (SESUAI FILTER & TENAGA MEDIS) ---
         $query = Pemeriksaan::where('pemeriksaans.tenaga_medis_id', $tenagaMedisId)
                             ->join('pendaftarans', 'pemeriksaans.pendaftaran_id', '=', 'pendaftarans.id')
                             ->join('users', 'pemeriksaans.pasien_id', '=', 'users.id')
@@ -450,7 +412,6 @@ class TenagaMedisController extends Controller
                                 'users.profile_photo_path'
                             );
 
-        // Terapkan filter waktu
         if ($filter == 'hari_ini') {
             $query->whereDate('pemeriksaans.created_at', Carbon::today());
         } elseif ($filter == 'bulan_ini') {
@@ -466,7 +427,6 @@ class TenagaMedisController extends Controller
 
         $kunjunganData = $query->latest('pemeriksaans.created_at')->get();
 
-        // --- 4. DATA UNTUK GRAFIK (SESUAI FILTER & TENAGA MEDIS) ---
         $chartLabels = [];
         $chartData = [];
         $baseChartQuery = Pemeriksaan::where('tenaga_medis_id', $tenagaMedisId);
@@ -488,14 +448,13 @@ class TenagaMedisController extends Controller
             $chartLabels = $chartQuery->pluck('tanggal')->map(fn($tgl) => Carbon::parse($tgl)->format('d M'));
             $chartData = $chartQuery->pluck('jumlah');
 
-        } else { // 'semua_data'
+        } else { 
             $chartQuery = $baseChartQuery->select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as bulan'), DB::raw('COUNT(*) as jumlah'))
                                      ->groupBy('bulan')->orderBy('bulan', 'asc')->get();
             $chartLabels = $chartQuery->pluck('bulan')->map(fn($bln) => Carbon::parse($bln)->isoFormat('MMM YYYY'));
             $chartData = $chartQuery->pluck('jumlah');
         }
 
-        // 5. Kirim semua data ke view baru
         return view('tenaga_medis.laporan', compact(
             'kunjunganHariIni', 'kunjunganBulanIni', 'semuaKunjungan',
             'kunjunganData', 'chartLabels', 'chartData',
@@ -503,10 +462,6 @@ class TenagaMedisController extends Controller
         ));
     }
 
-    /**
-     * 🔥 METHOD BARU: UNTUK CEK NOTIFIKASI REALTIME (AJAX)
-     * Digunakan oleh layout/tenaga_medis.blade.php
-     */
     public function checkNotif()
     {
         $tenagaMedisId = Auth::guard('tenaga_medis')->id();
@@ -518,7 +473,6 @@ class TenagaMedisController extends Controller
             ]);
         }
 
-        // 1. Ambil layanan yang ditangani dokter ini (Untuk Antrian)
         $layanansDitangani = JadwalPraktek::where('tenaga_medis_id', $tenagaMedisId)
                                         ->distinct()
                                         ->pluck('layanan')
@@ -526,7 +480,6 @@ class TenagaMedisController extends Controller
         
         $countPasien = 0;
 
-        // 2. Hitung jumlah pasien hari ini yang belum selesai
         if (!empty($layanansDitangani)) {
             $countPasien = Pendaftaran::whereIn('nama_layanan', $layanansDitangani)
                                     ->where('status', '!=', 'Selesai')
@@ -534,8 +487,6 @@ class TenagaMedisController extends Controller
                                     ->count();
         }
 
-        // 3. 🔥 HITUNG NOTIFIKASI CHAT (Pesan Belum Dibaca)
-        // Pesan yang receiver-nya adalah Saya (Tenaga Medis) dan is_read = false
         $unreadChatCount = Message::where('receiver_id', $tenagaMedisId)
                                   ->where('receiver_type', 'medis')
                                   ->where('is_read', false)
@@ -545,7 +496,7 @@ class TenagaMedisController extends Controller
             'success' => true,
             'counts' => [
                 'pasien' => $countPasien,
-                'chat' => $unreadChatCount // <--- Data baru untuk notifikasi chat
+                'chat' => $unreadChatCount 
             ]
         ]);
     }

@@ -45,17 +45,34 @@
     <div class="schedule-section">
         <div class="section-header">
             <h2><i class="fas fa-user-injured"></i> Daftar Pasien Anda</h2>
-            <span class="schedule-count">
-                <i class="fas fa-users"></i>
-                <span id="patient-count">{{ $pendaftarans->count() }}</span> Pasien
-            </span>
+            
+            {{-- 🔥 BUNGKUS FLEX UNTUK FILTER TANGGAL & BADGE JUMLAH --}}
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                
+                {{-- Form Filter Tanggal --}}
+                <form action="" method="GET" style="display: flex; gap: 10px; align-items: center; background: var(--bg-primary); padding: 8px 18px; border-radius: 25px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px var(--shadow-color);">
+                    <label for="tanggal" style="font-size: 0.9rem; font-weight: 600; margin: 0; color: var(--text-secondary);">
+                        <i class="fas fa-calendar-alt" style="color: var(--p1); margin-right: 5px;"></i> Tanggal:
+                    </label>
+                    <input type="date" name="tanggal" id="tanggal" 
+                           value="{{ request('tanggal', \Carbon\Carbon::today()->toDateString()) }}" 
+                           style="border: none; background: transparent; outline: none; font-family: inherit; font-weight: 600; color: var(--text-primary); cursor: pointer;" 
+                           onchange="this.form.submit()">
+                </form>
+
+                <span class="schedule-count">
+                    <i class="fas fa-users"></i>
+                    <span id="patient-count">{{ $pendaftarans->count() }}</span> Pasien
+                </span>
+            </div>
         </div>
+        
         <div class="schedule-container-modern">
             <div class="table-responsive">
                 <table class="schedule-table">
                     <thead>
                         <tr>
-                            <th><i class="fas fa-hashtag"></i> No</th>
+                            <th><i class="fas fa-hashtag"></i> No. Antrian</th>
                             <th><i class="fas fa-user"></i> Nama Pasien</th>
                             <th><i class="fas fa-stethoscope"></i> Layanan</th>
                             <th><i class="fas fa-info-circle"></i> Status</th>

@@ -1,7 +1,7 @@
 @forelse ($pendaftarans as $index => $pendaftaran)
     <tr class="schedule-row" style="animation-delay: {{ $index * 0.1 }}s">
         <td>
-            <div class="no-urut">{{ $loop->iteration }}</div>
+            <div class="no-urut">{{ $pendaftaran->no_antrian }}</div>
         </td>
         <td>
             <div class="doctor-info">
