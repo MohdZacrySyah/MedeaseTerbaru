@@ -1054,7 +1054,7 @@
             <div class="sidebar-header">
                 <h3>
                     <i class="fas fa-comments"></i>
-                    Chat Konsultasi
+                    Chat Tenaga Medis
                 </h3>
                 <div class="header-actions">
                     <button class="header-btn" title="Refresh" onclick="loadContacts()">

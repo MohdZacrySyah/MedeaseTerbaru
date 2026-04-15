@@ -885,7 +885,7 @@
                     <a href="{{ route('chat.index') }}" data-turbo-scroll="false">
                         <div style="display: flex; align-items: center; width: 100%;">
                             <i class="fas fa-comments"></i>
-                            <span style="flex-grow: 1;">Chat Dokter</span>
+                            <span style="flex-grow: 1;">Chat Tenaga Medis</span>
                             
                             {{-- BADGE CONTAINER CHAT --}}
                             <span id="notif-badge-chat"></span>

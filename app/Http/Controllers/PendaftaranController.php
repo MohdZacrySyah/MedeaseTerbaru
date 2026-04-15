@@ -383,4 +383,35 @@ class PendaftaranController extends Controller
             }
         });
     }
+
+    // FUNGSI UNTUK UNIT TEST: Perhitungan Estimasi Waktu
+    public function hitungEstimasiWaktu($jamMulai, $tanggalDipilih, $noAntrian, $waktuSekarang = null)
+    {
+        if (!$jamMulai) {
+            return null;
+        }
+
+        // Gunakan waktu sekarang yang di-passing (untuk testing) atau waktu aktual
+        $currentTime = $waktuSekarang ? \Carbon\Carbon::parse($waktuSekarang) : \Carbon\Carbon::now();
+        $scheduledStartTime = \Carbon\Carbon::parse($tanggalDipilih . ' ' . $jamMulai); 
+        $baseTimeForAntrian1 = $scheduledStartTime->copy(); 
+        
+        // Cek apakah tanggal yang dipilih adalah hari ini
+        $isToday = \Carbon\Carbon::parse($tanggalDipilih)->isSameDay($currentTime);
+
+        if ($isToday) {
+            // Jika jadwal sudah lewat, gunakan waktu pendaftaran sekarang sebagai Base Time.
+            if ($scheduledStartTime->isBefore($currentTime)) {
+                $baseTimeForAntrian1 = $currentTime->copy();
+            }
+        }
+        
+        $durasiPerPasien = 20; 
+        $menitTambahan = ($noAntrian - 1) * $durasiPerPasien;
+        
+        $estimasiWaktu = $baseTimeForAntrian1->addMinutes($menitTambahan);
+
+        return $estimasiWaktu->format('H:i:s');
+    }
+
 }
