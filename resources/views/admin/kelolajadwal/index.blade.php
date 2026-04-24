@@ -105,12 +105,6 @@
         height: 350px;
         background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
         border-radius: 50%;
-        animation: rotate 20s linear infinite;
-    }
-    
-    @keyframes rotate {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
     }
 
     .header-icon {
@@ -175,25 +169,6 @@
         z-index: 1;
     }
 
-    .pulse-circle {
-        position: absolute;
-        border: 2px solid rgba(255, 255, 255, 0.4);
-        border-radius: 50%;
-        animation: pulse-ring 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    .pulse-1 { width: 140px; height: 140px; animation-delay: 0s; }
-    .pulse-2 { width: 170px; height: 170px; animation-delay: 0.8s; }
-    .pulse-3 { width: 200px; height: 200px; animation-delay: 1.6s; }
-    
-    @keyframes pulse-ring {
-        0% { transform: translate(-50%, -50%) scale(0.9); opacity: 1; }
-        100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
-    }
-
     .btn-add {
         display: inline-flex;
         align-items: center;
@@ -207,33 +182,15 @@
         font-weight: 700;
         cursor: pointer;
         border: none;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s ease;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         position: relative;
         z-index: 1;
-        overflow: hidden;
         white-space: nowrap;
-    }
-
-    .btn-add::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-        transition: left 0.6s ease;
-    }
-
-    .btn-add:hover::before {
-        left: 100%;
     }
 
     .btn-add:hover {
         background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     }
 
     /* ===== PAGE ACTION BAR ===== */
@@ -262,8 +219,6 @@
 
     .btn-danger-action:hover {
         background: linear-gradient(135deg, #c0392b, #a93226);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
     }
 
     /* ===== ALERT ===== */
@@ -317,7 +272,6 @@
 
     .alert-close-btn:hover {
         color: var(--text-primary);
-        transform: rotate(90deg);
     }
 
     /* ===== TABLE WITH RESPONSIVE HORIZONTAL SCROLL ===== */
@@ -327,12 +281,6 @@
         box-shadow: 0 8px 30px var(--shadow-color);
         border: 1px solid var(--border-color);
         overflow: hidden;
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .schedule-container-modern:hover {
-        box-shadow: 0 20px 60px rgba(57, 166, 22, 0.25);
-        border-color: rgba(57, 166, 22, 0.4);
     }
 
     .table-card-header {
@@ -365,11 +313,9 @@
         border-radius: 25px;
         font-size: 0.95rem;
         font-weight: 600;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         backdrop-filter: blur(10px);
     }
 
-    /* TABLE RESPONSIVE WRAPPER WITH HORIZONTAL SCROLL */
     .table-responsive {
         overflow-x: auto;
         width: 100%;
@@ -378,7 +324,6 @@
         scrollbar-color: rgba(57, 166, 22, 0.3) var(--bg-secondary);
     }
 
-    /* Custom Scrollbar untuk Table */
     .table-responsive::-webkit-scrollbar {
         height: 8px;
     }
@@ -394,14 +339,10 @@
         border: 2px solid var(--bg-secondary);
     }
 
-    .table-responsive::-webkit-scrollbar-thumb:hover {
-        background-color: rgba(57, 166, 22, 0.5);
-    }
-
     .schedule-table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 900px; /* Minimum width agar tabel tidak terlalu sempit */
+        min-width: 900px; 
     }
 
     .schedule-table thead {
@@ -417,11 +358,6 @@
         text-transform: uppercase;
         letter-spacing: 0.8px;
         white-space: nowrap;
-    }
-
-    .schedule-table thead th i {
-        margin-right: 10px;
-        opacity: 0.95;
     }
 
     .text-center {
@@ -441,6 +377,7 @@
         padding: 20px 24px;
         color: var(--text-secondary);
         white-space: nowrap;
+        vertical-align: middle;
     }
 
     /* Number Badge */
@@ -456,7 +393,6 @@
         font-weight: 700;
         font-size: 1rem;
         padding: 0 10px;
-        box-shadow: 0 2px 8px rgba(108, 117, 125, 0.25);
     }
 
     /* Doctor Info */
@@ -480,7 +416,6 @@
         flex-shrink: 0;
         overflow: hidden;
         border: 3px solid var(--border-color);
-        box-shadow: 0 4px 12px rgba(57, 166, 22, 0.2);
     }
 
     .doctor-avatar img {
@@ -573,32 +508,17 @@
         border-radius: 12px;
         border: none;
         cursor: pointer;
-        transition: all 0.3s ease;
         font-size: 0.95rem;
     }
 
     .btn-edit {
         background: linear-gradient(135deg, #3498db, #2980b9);
         color: white;
-        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.25);
-    }
-
-    .btn-edit:hover {
-        background: linear-gradient(135deg, #2980b9, #21618c);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.35);
     }
 
     .btn-hapus {
         background: linear-gradient(135deg, #e74c3c, #c0392b);
         color: white;
-        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.25);
-    }
-
-    .btn-hapus:hover {
-        background: linear-gradient(135deg, #c0392b, #a93226);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
     }
 
     /* Empty State */
@@ -670,27 +590,14 @@
         border-radius: 50%;
         cursor: pointer;
         z-index: 10;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.3s ease;
     }
 
     .close-modal i {
         font-size: 1.2rem;
         color: var(--text-muted);
-        transition: color 0.3s ease;
-    }
-
-    .close-modal:hover {
-        background: #ef4444;
-        border-color: #ef4444;
-        transform: rotate(90deg);
-    }
-
-    .close-modal:hover i {
-        color: #fff;
     }
 
     .modal-content {
@@ -722,7 +629,6 @@
         align-items: center;
         justify-content: center;
         font-size: 32px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     }
 
     .modal-icon-danger {
@@ -779,535 +685,195 @@
         border-left: 3px solid #e74c3c;
     }
 
-    /* Form Styles */
-    .form-group {
-        margin-bottom: 24px;
-    }
-
+    /* Input Validation & Form Styles */
+    .form-group { margin-bottom: 24px; }
     .form-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 10px;
-        font-weight: 700;
-        color: var(--text-primary);
-        font-size: 0.95rem;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+        font-weight: 700; color: var(--text-primary); font-size: 0.95rem;
     }
-
-    .form-label i {
-        color: var(--p1);
-    }
-
+    .form-label i { color: var(--p1); }
+    
     .form-control {
-        width: 100%;
-        padding: 14px 18px;
-        border: 2px solid var(--border-color);
-        border-radius: 14px;
-        font-size: 0.95rem;
-        font-family: 'Inter', sans-serif;
-        background-color: var(--bg-secondary);
-        color: var(--text-primary);
-        transition: all 0.3s ease;
+        width: 100%; padding: 14px 18px; border: 2px solid var(--border-color);
+        border-radius: 14px; font-size: 0.95rem; font-family: 'Inter', sans-serif;
+        background-color: var(--bg-secondary); color: var(--text-primary);
         font-weight: 500;
     }
 
     .form-control:focus {
-        outline: none;
-        border-color: var(--p1);
-        background-color: var(--bg-primary);
-        box-shadow: 0 0 0 4px rgba(57, 166, 22, 0.1);
+        outline: none; border-color: var(--p1); background-color: var(--bg-primary);
     }
 
+    /* JS Validation Styles */
+    .input-error {
+        border-color: #ef4444 !important;
+        background-color: #fef2f2 !important;
+    }
+    [data-theme="dark"] .input-error {
+        border-color: #ef4444 !important;
+        background-color: rgba(239, 68, 68, 0.1) !important;
+    }
+    
+    .error-container {
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        color: #991b1b;
+        padding: 18px;
+        border-radius: 14px;
+        margin-bottom: 24px;
+        border: 2px solid #ef4444;
+        display: none; 
+    }
+    .error-container.active { display: block; }
+    
+    [data-theme="dark"] .error-container {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.3));
+        color: #fca5a5;
+        border-color: rgba(239, 68, 68, 0.5);
+    }
+    .error-container ul { margin-top: 8px; margin-left: 20px; }
+
     .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
     }
 
     /* Checkbox Grid */
     .checkbox-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-        gap: 12px;
-        margin-top: 10px;
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 12px; margin-top: 10px;
     }
 
     .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 14px;
-        background: var(--bg-secondary);
-        border: 2px solid var(--border-color);
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
+        display: flex; align-items: center; gap: 10px; padding: 14px;
+        background: var(--bg-secondary); border: 2px solid var(--border-color);
+        border-radius: 12px; cursor: pointer; position: relative;
     }
 
-    .checkbox-label:hover {
-        background: var(--hover-bg);
-        border-color: var(--p1);
-    }
-
-    .checkbox-label input[type="checkbox"] {
-        display: none;
-    }
+    .checkbox-label input[type="checkbox"] { display: none; }
 
     .checkbox-custom {
-        width: 22px;
-        height: 22px;
-        border: 2px solid var(--border-color);
-        border-radius: 6px;
-        position: relative;
-        transition: all 0.3s ease;
-        flex-shrink: 0;
-        background: var(--bg-primary);
+        width: 22px; height: 22px; border: 2px solid var(--border-color);
+        border-radius: 6px; position: relative; flex-shrink: 0; background: var(--bg-primary);
     }
 
     .checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
-        background: var(--grad);
-        border-color: var(--p1);
+        background: var(--grad); border-color: var(--p1);
     }
 
     .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
-        content: '\f00c';
-        font-family: 'Font Awesome 5 Free';
-        font-weight: 900;
-        color: white;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 12px;
+        content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-weight: 900;
+        color: white; position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%); font-size: 12px;
     }
 
     .checkbox-label input[type="checkbox"]:checked ~ .checkbox-text {
-        color: var(--p1);
-        font-weight: 700;
+        color: var(--p1); font-weight: 700;
     }
 
     .checkbox-text {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        transition: all 0.3s ease;
-        font-weight: 600;
+        font-size: 0.9rem; color: var(--text-secondary); font-weight: 600;
     }
 
     /* Form Actions */
     .form-actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 32px;
-        padding-top: 24px;
+        display: flex; gap: 12px; margin-top: 32px; padding-top: 24px;
         border-top: 2px solid var(--border-color);
     }
     
     #cancelScheduleModal .modal-card .form-actions {
-        padding: 0 40px 40px;
-        margin-top: 0;
-        border-top: none;
+        padding: 0 40px 40px; margin-top: 0; border-top: none;
     }
 
     .btn-primary {
-        flex: 1;
-        background: var(--grad);
-        color: #fff;
-        border: none;
-        padding: 16px 32px;
-        border-radius: 16px;
-        cursor: pointer;
-        font-weight: 700;
-        font-size: 1.05rem;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        box-shadow: 0 6px 20px rgba(57, 166, 22, 0.3);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-primary::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-        transition: left 0.6s ease;
-    }
-
-    .btn-primary:hover::before {
-        left: 100%;
-    }
-
-    .btn-primary:hover {
-        background: var(--grad-reverse);
-        transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(57, 166, 22, 0.5);
+        flex: 1; background: var(--grad); color: #fff; border: none;
+        padding: 16px 32px; border-radius: 16px; cursor: pointer;
+        font-weight: 700; font-size: 1.05rem; display: inline-flex;
+        align-items: center; justify-content: center; gap: 10px;
     }
 
     .btn-secondary {
-        flex: 1;
-        background: var(--bg-secondary);
-        color: var(--text-primary);
-        border: 2px solid var(--border-color);
-        padding: 16px 32px;
-        border-radius: 16px;
-        cursor: pointer;
-        font-weight: 700;
-        font-size: 1.05rem;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .btn-secondary:hover {
-        background: var(--p1);
-        color: white;
-        border-color: var(--p1);
-        transform: translateY(-3px);
+        flex: 1; background: var(--bg-secondary); color: var(--text-primary);
+        border: 2px solid var(--border-color); padding: 16px 32px;
+        border-radius: 16px; cursor: pointer; font-weight: 700; font-size: 1.05rem;
+        display: inline-flex; align-items: center; justify-content: center; gap: 10px;
     }
 
     .btn-danger {
-        flex: 1;
-        background: linear-gradient(135deg, #e74c3c, #c0392b);
-        color: #fff;
-        border: none;
-        padding: 16px 32px;
-        border-radius: 16px;
-        cursor: pointer;
-        font-weight: 700;
-        font-size: 1.05rem;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-danger::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-        transition: left 0.6s ease;
-    }
-
-    .btn-danger:hover::before {
-        left: 100%;
-    }
-
-    .btn-danger:hover {
-        background: linear-gradient(135deg, #c0392b, #a93226);
-        transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(231, 76, 60, 0.5);
+        flex: 1; background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff;
+        border: none; padding: 16px 32px; border-radius: 16px; cursor: pointer;
+        font-weight: 700; font-size: 1.05rem; display: inline-flex;
+        align-items: center; justify-content: center; gap: 10px;
     }
 
     /* ===== RESPONSIVE DESIGN FOR MOBILE ===== */
-    
-    /* Tablet */
     @media (max-width: 992px) {
-        .hero-illustration {
-            display: none;
-        }
-
-        .schedule-table {
-            min-width: 850px;
-        }
+        .hero-illustration { display: none; }
+        .schedule-table { min-width: 850px; }
     }
 
-    /* Mobile Landscape & Portrait */
     @media (max-width: 768px) {
-        .container-fluid-modern {
-            padding: 25px 16px;
-        }
-
-        .page-header-banner {
-            margin-bottom: 30px;
-        }
-
-        .header-content {
-            flex-direction: column;
-            text-align: center;
-            padding: 28px 20px;
-            gap: 16px;
-        }
-
-        .header-icon {
-            width: 65px;
-            height: 65px;
-            font-size: 32px;
-        }
-
-        .page-title {
-            font-size: 1.75rem;
-        }
-
-        .page-subtitle {
-            font-size: 0.95rem;
-            justify-content: center;
-        }
-
-        .page-action-bar {
-            justify-content: stretch;
-            margin-bottom: 25px;
-        }
-
-        .btn-danger-action {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .table-card-header {
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 18px 20px;
-        }
-
-        .table-title {
-            font-size: 1.05rem;
-        }
-
-        .schedule-count {
-            padding: 10px 20px;
-            font-size: 0.9rem;
-        }
-
-        .schedule-table {
-            font-size: 0.9rem;
-            min-width: 800px;
-        }
-
-        .schedule-table thead th,
-        .schedule-table tbody td {
-            padding: 16px 14px;
-        }
-
-        .doctor-avatar {
-            width: 45px;
-            height: 45px;
-            font-size: 18px;
-        }
-
-        .doctor-name {
-            min-width: 100px;
-        }
-
-        .service-badge,
-        .day-badge,
-        .time-badge-modern {
-            font-size: 0.8rem;
-            padding: 8px 14px;
-        }
-
-        .action-buttons {
-            gap: 6px;
-        }
-
-        .btn-action {
-            width: 38px;
-            height: 38px;
-        }
-
-        .modal-card {
-            width: 95%;
-            margin: 10px;
-        }
-
-        .modal-content {
-            padding: 28px 24px;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-        }
-
-        .form-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .checkbox-grid {
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-        }
-
-        .form-actions {
-            flex-direction: column;
-        }
-
-        #cancelScheduleModal .modal-card .form-actions {
-            padding: 0 24px 28px;
-        }
+        .container-fluid-modern { padding: 25px 16px; }
+        .page-header-banner { margin-bottom: 30px; }
+        .header-content { flex-direction: column; text-align: center; padding: 28px 20px; gap: 16px; }
+        .header-icon { width: 65px; height: 65px; font-size: 32px; }
+        .page-title { font-size: 1.75rem; }
+        .page-subtitle { font-size: 0.95rem; justify-content: center; }
+        .page-action-bar { justify-content: stretch; margin-bottom: 25px; }
+        .btn-danger-action { width: 100%; justify-content: center; }
+        .table-card-header { flex-direction: column; align-items: flex-start; padding: 18px 20px; }
+        .table-title { font-size: 1.05rem; }
+        .schedule-count { padding: 10px 20px; font-size: 0.9rem; }
+        .schedule-table { font-size: 0.9rem; min-width: 800px; }
+        .schedule-table thead th, .schedule-table tbody td { padding: 16px 14px; }
+        .doctor-avatar { width: 45px; height: 45px; font-size: 18px; }
+        .doctor-name { min-width: 100px; }
+        .service-badge, .day-badge, .time-badge-modern { font-size: 0.8rem; padding: 8px 14px; }
+        .action-buttons { gap: 6px; }
+        .btn-action { width: 38px; height: 38px; }
+        .modal-card { width: 95%; margin: 10px; }
+        .modal-content { padding: 28px 24px; }
+        .modal-title { font-size: 1.5rem; }
+        .form-grid { grid-template-columns: 1fr; }
+        .checkbox-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+        .form-actions { flex-direction: column; }
+        #cancelScheduleModal .modal-card .form-actions { padding: 0 24px 28px; }
     }
 
-    /* Extra Small Mobile */
     @media (max-width: 576px) {
-        .container-fluid-modern {
-            padding: 20px 12px;
-        }
-
-        .header-content {
-            padding: 24px 18px;
-            border-radius: 20px;
-        }
-
-        .header-icon {
-            width: 60px;
-            height: 60px;
-            font-size: 28px;
-            border-radius: 14px;
-        }
-
-        .page-title {
-            font-size: 1.5rem;
-        }
-
-        .page-subtitle {
-            font-size: 0.9rem;
-        }
-
-        .greeting-badge {
-            font-size: 0.8rem;
-            padding: 8px 16px;
-        }
-
-        .btn-danger-action {
-            font-size: 0.9rem;
-            padding: 12px 20px;
-        }
-
-        .table-card-header {
-            padding: 16px 18px;
-        }
-
-        .table-title {
-            font-size: 1rem;
-        }
-
-        .schedule-count {
-            padding: 8px 16px;
-            font-size: 0.85rem;
-        }
-
-        .schedule-table {
-            min-width: 750px;
-        }
-
-        .schedule-table thead th {
-            font-size: 0.8rem;
-            padding: 14px 12px;
-        }
-
-        .schedule-table tbody td {
-            padding: 14px 12px;
-            font-size: 0.85rem;
-        }
-
-        .doctor-avatar {
-            width: 42px;
-            height: 42px;
-            font-size: 16px;
-            border-width: 2px;
-        }
-
-        .doctor-name {
-            font-size: 0.9rem;
-            min-width: 90px;
-        }
-
-        .number-badge {
-            min-width: 36px;
-            height: 36px;
-            font-size: 0.9rem;
-        }
-
-        .service-badge,
-        .day-badge,
-        .time-badge-modern {
-            font-size: 0.75rem;
-            padding: 7px 12px;
-        }
-
-        .btn-action {
-            width: 36px;
-            height: 36px;
-            font-size: 0.9rem;
-        }
-
-        .empty-schedule {
-            padding: 50px 16px;
-        }
-
-        .empty-schedule i {
-            font-size: 3.5rem;
-        }
-
-        .empty-schedule p {
-            font-size: 1rem;
-        }
-
-        .empty-schedule small {
-            font-size: 0.85rem;
-        }
-
-        .modal-content {
-            padding: 24px 20px;
-        }
-
-        .modal-title {
-            font-size: 1.3rem;
-        }
-
-        .modal-icon {
-            width: 60px;
-            height: 60px;
-            font-size: 28px;
-        }
-
-        .checkbox-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .checkbox-label {
-            padding: 12px;
-        }
-
-        .checkbox-text {
-            font-size: 0.85rem;
-        }
-
-        .btn-primary,
-        .btn-secondary,
-        .btn-danger {
-            padding: 14px 24px;
-            font-size: 0.95rem;
-        }
+        .container-fluid-modern { padding: 20px 12px; }
+        .header-content { padding: 24px 18px; border-radius: 20px; }
+        .header-icon { width: 60px; height: 60px; font-size: 28px; border-radius: 14px; }
+        .page-title { font-size: 1.5rem; }
+        .page-subtitle { font-size: 0.9rem; }
+        .greeting-badge { font-size: 0.8rem; padding: 8px 16px; }
+        .btn-danger-action { font-size: 0.9rem; padding: 12px 20px; }
+        .table-card-header { padding: 16px 18px; }
+        .table-title { font-size: 1rem; }
+        .schedule-count { padding: 8px 16px; font-size: 0.85rem; }
+        .schedule-table { min-width: 750px; }
+        .schedule-table thead th { font-size: 0.8rem; padding: 14px 12px; }
+        .schedule-table tbody td { padding: 14px 12px; font-size: 0.85rem; }
+        .doctor-avatar { width: 42px; height: 42px; font-size: 16px; border-width: 2px; }
+        .doctor-name { font-size: 0.9rem; min-width: 90px; }
+        .number-badge { min-width: 36px; height: 36px; font-size: 0.9rem; }
+        .service-badge, .day-badge, .time-badge-modern { font-size: 0.75rem; padding: 7px 12px; }
+        .btn-action { width: 36px; height: 36px; font-size: 0.9rem; }
+        .empty-schedule { padding: 50px 16px; }
+        .empty-schedule i { font-size: 3.5rem; }
+        .empty-schedule p { font-size: 1rem; }
+        .empty-schedule small { font-size: 0.85rem; }
+        .modal-content { padding: 24px 20px; }
+        .modal-title { font-size: 1.3rem; }
+        .modal-icon { width: 60px; height: 60px; font-size: 28px; }
+        .checkbox-grid { grid-template-columns: 1fr 1fr; }
+        .checkbox-label { padding: 12px; }
+        .checkbox-text { font-size: 0.85rem; }
+        .btn-primary, .btn-secondary, .btn-danger { padding: 14px 24px; font-size: 0.95rem; }
     }
 
-    /* Ultra Small Mobile (< 400px) */
     @media (max-width: 400px) {
-        .page-title {
-            font-size: 1.35rem;
-        }
-
-        .schedule-table {
-            min-width: 700px;
-        }
-
-        .checkbox-grid {
-            grid-template-columns: 1fr;
-        }
+        .page-title { font-size: 1.35rem; }
+        .schedule-table { min-width: 700px; }
+        .checkbox-grid { grid-template-columns: 1fr; }
     }
 </style>
 @endpush
@@ -1316,9 +882,7 @@
 
     <div class="page-header-banner">
         <div class="header-content">
-            <div class="header-icon">
-                <i class="fas fa-calendar-alt"></i>
-            </div>
+            <div class="header-icon"><i class="fas fa-calendar-alt"></i></div>
             <div class="header-text">
                 <div class="greeting-badge">
                     <i class="fas fa-hospital"></i>
@@ -1331,9 +895,6 @@
                 </p>
             </div>
             <div class="hero-illustration">
-                <div class="pulse-circle pulse-1"></div>
-                <div class="pulse-circle pulse-2"></div>
-                <div class="pulse-circle pulse-3"></div>
                 <button class="btn-add" id="btnTambahJadwal">
                     <span>Tambah Jadwal</span>
                     <i class="fas fa-plus"></i>
@@ -1508,7 +1069,9 @@
                 </h2>
             </div>
 
-            <form id="jadwalForm" method="POST">
+            <div id="modalErrors" class="error-container"></div>
+
+            <form id="jadwalForm" method="POST" novalidate>
                 @csrf
                 <input type="hidden" id="formMethod" name="_method" value="">
                 
@@ -1537,7 +1100,7 @@
                     <label class="form-label">
                         <i class="fas fa-calendar-week"></i> Hari Praktek
                     </label>
-                    <div class="checkbox-grid">
+                    <div class="checkbox-grid" id="hariCheckboxContainer">
                         @php
                             $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
                         @endphp
@@ -1568,13 +1131,13 @@
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-save"></i>
-                        <span id="btnSubmitText">Simpan Jadwal</span>
-                    </button>
                     <button type="button" class="btn-secondary" id="btnCancelModal">
                         <i class="fas fa-times"></i>
                         Batal
+                    </button>
+                    <button type="submit" class="btn-primary" id="btnSubmitModal">
+                        <i class="fas fa-save"></i>
+                        <span id="btnSubmitText">Simpan Jadwal</span>
                     </button>
                 </div>
             </form>
@@ -1599,7 +1162,9 @@
                 </h2>
             </div>
 
-            <form id="formCancelSchedule">
+            <div id="cancelModalErrors" class="error-container"></div>
+
+            <form id="formCancelSchedule" novalidate>
                 @csrf 
                 <div class="form-group">
                     <label for="cancel_doctor" class="form-label">
@@ -1636,7 +1201,7 @@
                     <button type="button" class="btn-secondary" id="btnCancelModalClose">
                         <i class="fas fa-times"></i> Batal
                     </button>
-                    <button type="button" class="btn-danger" id="submitCancelSchedule">
+                    <button type="submit" class="btn-danger" id="submitCancelSchedule">
                         <i class="fas fa-calendar-times"></i> Tutup & Batalkan
                     </button>
                 </div>
@@ -1686,6 +1251,7 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Form & Modals Variables
         const modal = document.getElementById('jadwalModal');
         const btnTambah = document.getElementById('btnTambahJadwal');
         const closeBtn = document.getElementById('closeModalBtn');
@@ -1705,7 +1271,12 @@
         const btnCancelToggle = document.getElementById('btnCancelScheduleModalToggle');
         const closeCancelBtn = document.getElementById('closeCancelModalBtn');
         const cancelModalCloseBtn = document.getElementById('btnCancelModalClose');
-        const submitCancelBtn = document.getElementById('submitCancelSchedule');
+        const formCancelSchedule = document.getElementById('formCancelSchedule');
+        const btnSubmitModal = document.getElementById('btnSubmitModal');
+
+        // JS Validation Variables
+        const modalErrors = document.getElementById('modalErrors');
+        const cancelModalErrors = document.getElementById('cancelModalErrors');
 
         // --- GLOBAL AUTO REFRESH ---
         if (typeof window.initAutoRefresh === 'function') {
@@ -1718,7 +1289,6 @@
         // --- REBIND EVENTS ---
         window.rebindEvents = function() {
             bindTableEvents();
-            console.log('♻️ Table events rebound!');
         };
 
         function bindTableEvents() {
@@ -1742,9 +1312,7 @@
             const jamMulai = btn.dataset.jamMulai;
             const jamSelesai = btn.dataset.jamSelesai;
 
-            openModal('edit', {
-                id, tenagaMedisId, layanan, hari, jamMulai, jamSelesai
-            });
+            openModal('edit', { id, tenagaMedisId, layanan, hari, jamMulai, jamSelesai });
         }
 
         function handleDeleteSubmit(e) {
@@ -1757,7 +1325,10 @@
         function openCancelModal() {
             cancelModal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            document.getElementById('formCancelSchedule').reset();
+            formCancelSchedule.reset();
+            cancelModalErrors.classList.remove('active');
+            cancelModalErrors.innerHTML = '';
+            document.querySelectorAll('#formCancelSchedule .form-control').forEach(el => el.classList.remove('input-error'));
             document.getElementById('cancel_date').min = new Date().toISOString().split('T')[0]; 
         }
 
@@ -1783,6 +1354,13 @@
 
             form.reset();
             document.querySelectorAll('input[name="hari[]"]').forEach(cb => cb.checked = false);
+            
+            // Bersihkan error styles
+            modalErrors.classList.remove('active');
+            modalErrors.innerHTML = '';
+            document.querySelectorAll('#jadwalForm .form-control').forEach(el => el.classList.remove('input-error'));
+            document.getElementById('hariCheckboxContainer').style.border = 'none';
+            document.getElementById('hariCheckboxContainer').style.padding = '0';
 
             if (mode === 'create') {
                 modalTitleText.textContent = 'Tambah Jadwal Praktek';
@@ -1815,52 +1393,127 @@
             form.reset();
         }
 
-        // --- EVENT LISTENERS ---
-        bindTableEvents();
+        // --- VALIDASI FORM TAMBAH/EDIT JADWAL ---
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            let errorMessages = [];
 
-        const alert = document.getElementById('autoHideAlert');
-        if (alert) {
-            setTimeout(() => { 
-                alert.style.opacity = '0';
-                alert.style.transition = 'opacity 0.6s ease';
-                setTimeout(() => alert.remove(), 600);
-            }, 5000);
-        }
+            const tenagaId = document.getElementById('tenaga_medis_id');
+            const layanan = document.getElementById('layanan');
+            const jamMulai = document.getElementById('jam_mulai');
+            const jamSelesai = document.getElementById('jam_selesai');
+            const checkboxes = document.querySelectorAll('input[name="hari[]"]:checked');
+            const cbContainer = document.getElementById('hariCheckboxContainer');
 
-        btnTambah.addEventListener('click', function() {
-            openModal('create');
-        });
-        
-        if(btnCancelToggle) btnCancelToggle.addEventListener('click', openCancelModal);
-        if(closeCancelBtn) closeCancelBtn.addEventListener('click', closeCancelModal);
-        if(cancelModalCloseBtn) cancelModalCloseBtn.addEventListener('click', closeCancelModal);
+            // Reset styles
+            [tenagaId, layanan, jamMulai, jamSelesai].forEach(el => el.classList.remove('input-error'));
+            cbContainer.style.border = 'none';
+            cbContainer.style.padding = '0';
 
-        closeBtn.addEventListener('click', closeModal);
-        cancelBtn.addEventListener('click', closeModal);
+            if (tenagaId.value === '') { 
+                isValid = false; 
+                tenagaId.classList.add('input-error'); 
+                errorMessages.push('Tenaga Medis harus dipilih.'); 
+            }
+            if (layanan.value.trim() === '') { 
+                isValid = false; 
+                layanan.classList.add('input-error'); 
+                errorMessages.push('Layanan tidak boleh kosong.'); 
+            }
+            if (checkboxes.length === 0) {
+                isValid = false;
+                cbContainer.style.border = '2px solid #ef4444';
+                cbContainer.style.padding = '10px';
+                cbContainer.style.borderRadius = '12px';
+                errorMessages.push('Pilih minimal satu Hari Praktek.');
+            }
+            if (jamMulai.value === '') { 
+                isValid = false; 
+                jamMulai.classList.add('input-error'); 
+                errorMessages.push('Jam Mulai harus diisi.'); 
+            }
+            if (jamSelesai.value === '') { 
+                isValid = false; 
+                jamSelesai.classList.add('input-error'); 
+                errorMessages.push('Jam Selesai harus diisi.'); 
+            }
 
-        closeDeleteBtn.addEventListener('click', closeDeleteModal);
-        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
-
-        confirmDeleteBtn.addEventListener('click', function() {
-            if (formToDelete) {
-                formToDelete.submit();
+            if (!isValid) {
+                e.preventDefault();
+                let errorHtml = `<strong><i class="fas fa-exclamation-triangle"></i> Terjadi kesalahan:</strong><ul>`;
+                errorMessages.forEach(msg => errorHtml += `<li>${msg}</li>`);
+                errorHtml += `</ul>`;
+                modalErrors.innerHTML = errorHtml;
+                modalErrors.classList.add('active');
+                document.querySelector('#jadwalModal .modal-content').scrollTop = 0;
+            } else {
+                btnSubmitModal.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Menyimpan...</span>';
+                btnSubmitModal.style.pointerEvents = 'none';
             }
         });
 
-        // Cancel Schedule Submit Logic
-        if(submitCancelBtn) {
-            submitCancelBtn.addEventListener('click', function() {
-                const tenagaMedisId = document.getElementById('cancel_doctor').value;
-                const date = document.getElementById('cancel_date').value;
-                const reason = document.getElementById('cancel_reason').value;
-                const csrfToken = document.querySelector('#formCancelSchedule input[name="_token"]').value;
+        // Menghilangkan kotak merah form jadwal saat ngetik
+        document.querySelectorAll('#jadwalForm .form-control').forEach(el => {
+            el.addEventListener('input', function() {
+                this.classList.remove('input-error');
+                modalErrors.classList.remove('active');
+            });
+        });
+        document.querySelectorAll('input[name="hari[]"]').forEach(el => {
+            el.addEventListener('change', function() {
+                document.getElementById('hariCheckboxContainer').style.border = 'none';
+                document.getElementById('hariCheckboxContainer').style.padding = '0';
+                modalErrors.classList.remove('active');
+            });
+        });
+
+        // --- VALIDASI FORM CANCEL SCHEDULE ---
+        if(formCancelSchedule) {
+            formCancelSchedule.addEventListener('submit', function(e) {
+                e.preventDefault();
+                let isValid = true;
+                let errorMessages = [];
+
                 const doctorSelect = document.getElementById('cancel_doctor');
-                const doctorName = doctorSelect.options[doctorSelect.selectedIndex].text;
-                
-                if (!tenagaMedisId || !date || !reason || reason.length < 10) {
-                    Swal.fire('Validasi Gagal', 'Harap pilih dokter, tanggal, dan tulis alasan minimal 10 karakter.', 'warning');
+                const cancelDate = document.getElementById('cancel_date');
+                const cancelReason = document.getElementById('cancel_reason');
+
+                // Reset styles
+                [doctorSelect, cancelDate, cancelReason].forEach(el => el.classList.remove('input-error'));
+
+                if (doctorSelect.value === '') { 
+                    isValid = false; 
+                    doctorSelect.classList.add('input-error'); 
+                    errorMessages.push('Dokter harus dipilih.'); 
+                }
+                if (cancelDate.value === '') { 
+                    isValid = false; 
+                    cancelDate.classList.add('input-error'); 
+                    errorMessages.push('Tanggal harus dipilih.'); 
+                }
+                if (cancelReason.value.trim().length < 10) { 
+                    isValid = false; 
+                    cancelReason.classList.add('input-error'); 
+                    errorMessages.push('Alasan pembatalan minimal 10 karakter.'); 
+                }
+
+                if (!isValid) {
+                    let errorHtml = `<strong><i class="fas fa-exclamation-triangle"></i> Validasi Gagal:</strong><ul>`;
+                    errorMessages.forEach(msg => errorHtml += `<li>${msg}</li>`);
+                    errorHtml += `</ul>`;
+                    cancelModalErrors.innerHTML = errorHtml;
+                    cancelModalErrors.classList.add('active');
                     return;
                 }
+
+                // If valid, proceed to SweetAlert
+                cancelModalErrors.classList.remove('active');
+                
+                const csrfToken = document.querySelector('#formCancelSchedule input[name="_token"]').value;
+                const doctorName = doctorSelect.options[doctorSelect.selectedIndex].text;
+                const tenagaMedisId = doctorSelect.value;
+                const date = cancelDate.value;
+                const reason = cancelReason.value;
 
                 Swal.fire({
                     title: 'Konfirmasi Penutupan Jadwal',
@@ -1927,6 +1580,44 @@
                 });
             });
         }
+
+        // Menghilangkan efek error pada form cancel saat mengetik
+        document.querySelectorAll('#formCancelSchedule .form-control').forEach(el => {
+            el.addEventListener('input', function() {
+                this.classList.remove('input-error');
+                cancelModalErrors.classList.remove('active');
+            });
+        });
+
+        // --- EVENT LISTENERS ---
+        bindTableEvents();
+
+        const alert = document.getElementById('autoHideAlert');
+        if (alert) {
+            setTimeout(() => { 
+                alert.style.opacity = '0';
+                alert.style.transition = 'opacity 0.6s ease';
+                setTimeout(() => alert.remove(), 600);
+            }, 5000);
+        }
+
+        btnTambah.addEventListener('click', function() { openModal('create'); });
+        
+        if(btnCancelToggle) btnCancelToggle.addEventListener('click', openCancelModal);
+        if(closeCancelBtn) closeCancelBtn.addEventListener('click', closeCancelModal);
+        if(cancelModalCloseBtn) cancelModalCloseBtn.addEventListener('click', closeCancelModal);
+
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+
+        closeDeleteBtn.addEventListener('click', closeDeleteModal);
+        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (formToDelete) {
+                formToDelete.submit();
+            }
+        });
 
         window.addEventListener('click', function(event) {
             if (event.target == modal) closeModal();

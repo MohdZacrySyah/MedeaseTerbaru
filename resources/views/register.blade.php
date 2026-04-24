@@ -464,6 +464,17 @@
             transform: translateY(-50%) scale(1.15);
         }
 
+        /* Error Input State (Ditambahkan untuk JS Validation) */
+        .form-input.input-error {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+
+        [data-theme="dark"] .form-input.input-error {
+            border-color: #ef4444 !important;
+            background-color: rgba(239, 68, 68, 0.1) !important;
+        }
+
         /* Floating Labels */
         .floating-label {
             position: absolute;
@@ -901,7 +912,9 @@
                 </div>
             @endif
 
-            <form action="{{ route('register.proses') }}" method="POST" id="registerForm">
+            <div id="jsErrors"></div>
+
+            <form action="{{ route('register.proses') }}" method="POST" id="registerForm" novalidate>
                 @csrf
 
                 <div class="floating-label-group">
@@ -1084,65 +1097,117 @@
         passwordConfirmation.addEventListener('input', function() {
             if (this.value === passwordInput.value && this.value.length > 0) {
                 this.classList.add('valid');
-                this.classList.remove('invalid');
+                this.classList.remove('invalid', 'input-error');
             } else if (this.value.length > 0) {
                 this.classList.add('invalid');
                 this.classList.remove('valid');
             } else {
-                this.classList.remove('valid', 'invalid');
+                this.classList.remove('valid', 'invalid', 'input-error');
             }
         });
 
-        // Form Submit with Ripple (Loading Overlay dihapus)
+        // Form Validation & Submit Handlers
         const registerForm = document.getElementById('registerForm');
         const submitBtn = document.querySelector('.btn-submit');
+        const jsErrorsBox = document.getElementById('jsErrors');
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
 
         // Ripple Effect on Button Click
-        submitBtn.addEventListener('click', function(e) {
-            const ripple = document.createElement('span');
-            ripple.classList.add('ripple');
-            
-            const rect = this.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height);
-            const x = e.clientX - rect.left - size / 2;
-            const y = e.clientY - rect.top - size / 2;
-            
-            ripple.style.width = ripple.style.height = size + 'px';
-            ripple.style.left = x + 'px';
-            ripple.style.top = y + 'px';
-            
-            this.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
-        });
+       
 
-        // Form Submit with simple Loading class on button
+        // JS Validation on Submit
         registerForm.addEventListener('submit', function(e) {
-            if (this.checkValidity()) {
-                // Check if passwords match
-                if (passwordInput.value !== passwordConfirmation.value) {
-                    e.preventDefault();
-                    alert('Password dan Konfirmasi Password tidak cocok!');
-                    return;
-                }
+            let isValid = true;
+            let errorMessages = [];
+
+            // Hapus pesan error sebelumnya
+            jsErrorsBox.innerHTML = '';
+            [nameInput, emailInput, passwordInput, passwordConfirmation].forEach(el => {
+                el.classList.remove('input-error');
+            });
+
+            // 1. Validasi Nama
+            if (nameInput.value.trim() === '') {
+                isValid = false;
+                nameInput.classList.add('input-error');
+                errorMessages.push('Nama Lengkap tidak boleh kosong.');
+            }
+
+            // 2. Validasi Email
+            if (emailInput.value.trim() === '') {
+                isValid = false;
+                emailInput.classList.add('input-error');
+                errorMessages.push('Email Address tidak boleh kosong.');
+            } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailInput.value)) {
+                isValid = false;
+                emailInput.classList.add('input-error');
+                errorMessages.push('Format email tidak valid.');
+            }
+
+            // 3. Validasi Password
+            if (passwordInput.value.trim() === '') {
+                isValid = false;
+                passwordInput.classList.add('input-error');
+                errorMessages.push('Password tidak boleh kosong.');
+            }
+
+            // 4. Validasi Konfirmasi Password & Kecocokan
+            if (passwordConfirmation.value.trim() === '') {
+                isValid = false;
+                passwordConfirmation.classList.add('input-error');
+                errorMessages.push('Konfirmasi Password tidak boleh kosong.');
+            } else if (passwordInput.value !== passwordConfirmation.value) {
+                isValid = false;
+                passwordConfirmation.classList.add('input-error');
+                errorMessages.push('Password dan Konfirmasi Password tidak cocok!');
+            }
+
+            // Jika ada yang tidak valid, batalkan submit dan tampilkan box error
+            if (!isValid) {
+                e.preventDefault();
                 
-                // Tambahkan class loading ke tombol, tanpa menampilkan overlay
+                let errorHtml = `
+                    <div class="alert alert-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Pendaftaran Tertunda</strong>
+                            <ul>
+                `;
+                errorMessages.forEach(msg => {
+                    errorHtml += `<li>${msg}</li>`;
+                });
+                errorHtml += `</ul></div></div>`;
+                
+                jsErrorsBox.innerHTML = errorHtml;
+
+              
+                
+            } else {
+                // Valid, izinkan form disubmit & tampilkan loading spinner
                 submitBtn.classList.add('loading');
             }
         });
 
-        // Enhanced Form Validation
-        const nameInput = document.getElementById('name');
-        const emailInput = document.getElementById('email');
+        // Menghilangkan efek error saat user mulai mengetik lagi
+        document.querySelectorAll('.form-input').forEach(input => {
+            input.addEventListener('input', function() {
+                this.classList.remove('input-error');
+                if(jsErrorsBox.innerHTML !== '') {
+                    jsErrorsBox.innerHTML = ''; // Sembunyikan alert error box jika mulai ngetik
+                }
+            });
+        });
 
+        // Enhanced Form Input Icon Animations (on blur)
         nameInput.addEventListener('blur', function() {
             const icon = this.nextElementSibling;
-            
-            if (this.value.length >= 3) {
+            if (this.value.length >= 3 && !this.classList.contains('input-error')) {
                 this.classList.add('success');
                 this.classList.remove('invalid');
                 icon.classList.add('animated');
                 setTimeout(() => icon.classList.remove('animated'), 500);
-            } else if (this.value.length > 0) {
+            } else if (this.value.length > 0 && !this.classList.contains('input-error')) {
                 this.classList.add('invalid');
                 this.classList.remove('success');
             }
@@ -1150,13 +1215,12 @@
 
         emailInput.addEventListener('blur', function() {
             const icon = this.nextElementSibling;
-            
-            if (this.value && this.checkValidity()) {
+            if (this.value && this.checkValidity() && !this.classList.contains('input-error')) {
                 this.classList.add('success');
                 this.classList.remove('invalid');
                 icon.classList.add('animated');
                 setTimeout(() => icon.classList.remove('animated'), 500);
-            } else if (this.value) {
+            } else if (this.value && !this.classList.contains('input-error')) {
                 this.classList.add('invalid');
                 this.classList.remove('success');
             }
@@ -1173,26 +1237,7 @@
             }, 4000);
         }
 
-        // Shake animation on error
-        const registerWrapper = document.querySelector('.login-wrapper');
-        @if ($errors->any())
-            registerWrapper.classList.add('shake');
-            setTimeout(() => registerWrapper.classList.remove('shake'), 500);
-        @endif
-
-        // Login Link (Langsung redirect tanpa loading overlay)
-        // Tidak perlu event listener khusus karena sudah menggunakan anchor tag biasa
-
-        // Input Animation on Focus
-        document.querySelectorAll('.form-input').forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentElement.style.transform = 'scale(1.01)';
-            });
-
-            input.addEventListener('blur', function() {
-                this.parentElement.style.transform = 'scale(1)';
-            });
-        });
+       
 
         // Disable form resubmission on page refresh
         if (window.history.replaceState) {

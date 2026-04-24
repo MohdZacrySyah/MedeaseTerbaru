@@ -3,29 +3,26 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\TenagaMedis; // <-- PERUBAHAN 1: Ganti User menjadi TenagaMedis
+use App\Models\TenagaMedis; 
 use Illuminate\Http\Request;
-use App\Models\User; // <-- Tambahkan ini
-use App\Models\Pemeriksaan; // <-- Tambahkan ini
-use App\Models\Pendaftaran;
-use App\Models\JadwalPraktek;
-use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
+use App\Models\User; 
+use App\Models\Pemeriksaan; 
 
 class TenagaMedisController extends Controller
 {
     /**
-     * Menampilkan daftar akun tenaga medis.
+     * Menampilkan daftar akun tenaga medis yang aktif.
      */
     public function index()
     {
-        // PERUBAHAN 2: Ambil semua data dari model TenagaMedis
+        // Dengan SoftDeletes, all() hanya mengambil data dokter yang belum dihapus (deleted_at = null)
         $tenagaMedis = TenagaMedis::all(); 
         return view('admin.tenaga_medis.index', compact('tenagaMedis'));
     }
 
     /**
      * Menampilkan form untuk membuat akun baru.
+     * (Opsional jika sudah pakai modal)
      */
     public function create()
     {
@@ -39,12 +36,10 @@ class TenagaMedisController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            // PERUBAHAN 3: Cek email unik di tabel 'tenaga_medis'
             'email' => 'required|string|email|max:255|unique:tenaga_medis', 
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        // PERUBAHAN 4: Buat data baru menggunakan model TenagaMedis dan hapus 'role'
         TenagaMedis::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -56,10 +51,10 @@ class TenagaMedisController extends Controller
 
     /**
      * Menampilkan form untuk mengedit data.
+     * (Opsional jika sudah pakai modal)
      */
     public function edit($id)
     {
-        // PERUBAHAN 5: Cari data menggunakan model TenagaMedis
         $akun = TenagaMedis::findOrFail($id); 
         return view('admin.tenaga_medis.edit', compact('akun'));
     }
@@ -70,9 +65,9 @@ class TenagaMedisController extends Controller
     public function update(Request $request, $id)
     {
         $akun = TenagaMedis::findOrFail($id);
+        
         $request->validate([
             'name' => 'required|string|max:255',
-            // PERUBAHAN 6: Sesuaikan validasi unik untuk update
             'email' => 'required|string|email|max:255|unique:tenaga_medis,email,' . $akun->id, 
             'password' => 'nullable|string|min:8|confirmed',
         ]);
@@ -90,31 +85,45 @@ class TenagaMedisController extends Controller
     }
 
     /**
-     * Menghapus data dari database.
+     * Menghapus (Soft Delete) akun dari database.
+     * Jadwal dan Pemeriksaan pasien dijamin aman!
      */
     public function destroy($id)
     {
-        // PERUBAHAN 7: Hapus data menggunakan model TenagaMedis
-        $akun = TenagaMedis::findOrFail($id); 
-        $akun->delete();
-        return redirect()->route('admin.tenaga-medis.index')->with('success', 'Akun tenaga medis berhasil dihapus.');
+        try {
+            $akun = TenagaMedis::findOrFail($id); 
+
+            // Karena menggunakan SoftDeletes, data dokter TIDAK BENAR-BENAR HAPUS.
+            // Hanya disembunyikan (deleted_at terisi), sehingga data rekam medis pasien TETAP AMAN.
+            $akun->delete();
+
+            return redirect()->route('admin.tenaga-medis.index')
+                ->with('success', 'Akun tenaga medis berhasil dinonaktifkan (Soft Delete). Data rekam medis pasien tetap aman.');
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.tenaga-medis.index')
+                ->with('error', 'Gagal menonaktifkan tenaga medis: ' . $e->getMessage());
+        }
     }
 
-    // PERUBAHAN 8: Hapus method lihatPasien() karena tidak relevan di controller ini
-    public function riwayatPasien(User $user) // Terima objek User pasien dari URL
-{
-    // Pastikan user yang diminta memang pasien (opsional, tapi bagus)
-    if ($user->role !== 'pasien') {
-        abort(404); // Atau redirect dengan error
+    /**
+     * Menampilkan riwayat pasien khusus
+     */
+    public function riwayatPasien(User $user) 
+    {
+        if ($user->role !== 'pasien') {
+            abort(404); 
+        }
+
+        // Karena tenaga medis mungkin sudah di-soft-delete, kita perlu load data mereka
+        // menggunakan withTrashed() agar nama dokter tetap tampil di riwayat pasien
+        $riwayats = Pemeriksaan::where('pasien_id', $user->id)
+                               ->with(['tenagaMedis' => function($query) {
+                                   $query->withTrashed(); // Memunculkan nama dokter yang sudah dihapus
+                               }, 'pendaftaran']) 
+                               ->latest('created_at')
+                               ->get();
+
+        return view('tenaga_medis.pasien.riwayat', compact('user', 'riwayats'));
     }
-
-    // Ambil semua data pemeriksaan untuk pasien ini
-    $riwayats = Pemeriksaan::where('pasien_id', $user->id)
-                           ->with(['tenagaMedis', 'pendaftaran']) // Load relasi dokter & pendaftaran
-                           ->latest('created_at')
-                           ->get();
-
-    // Kirim data pasien dan riwayatnya ke view
-    return view('tenaga_medis.pasien.riwayat', compact('user', 'riwayats'));
-}
 }

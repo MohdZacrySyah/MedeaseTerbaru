@@ -5,13 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable; // <-- Penting
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes; // <-- TAMBAHAN: Import SoftDeletes
 // 1. TAMBAHKAN DUA 'USE' STATEMENT INI
 use Illuminate\Auth\Passwords\CanResetPassword;
 use App\Notifications\TenagaMedisResetPasswordNotification; // (Akan kita buat)
 
 class TenagaMedis extends Authenticatable implements \Illuminate\Contracts\Auth\CanResetPassword
 {
-    use HasFactory, Notifiable, CanResetPassword;
+    // TAMBAHAN: Masukkan SoftDeletes ke dalam trait yang digunakan
+    use HasFactory, Notifiable, CanResetPassword, SoftDeletes; 
 
     protected $guard = 'tenaga_medis'; // <-- Tentukan guard
 
@@ -36,7 +38,7 @@ class TenagaMedis extends Authenticatable implements \Illuminate\Contracts\Auth\
         $this->notify(new TenagaMedisResetPasswordNotification($token));
     }
 
-// Tambahkan relasi ke JadwalPraktek
+    // Tambahkan relasi ke JadwalPraktek
     public function jadwalPrakteks()
     {
         return $this->hasMany(JadwalPraktek::class, 'tenaga_medis_id');

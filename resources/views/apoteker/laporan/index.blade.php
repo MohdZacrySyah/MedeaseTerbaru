@@ -214,7 +214,8 @@
                     </table>
                 </div>
                 <div class="pagination-container">
-                    {{ $laporanReseps->links('vendor.pagination.bootstrap-4') }} 
+                    {{-- DI PERBAIKI DI SINI --}}
+                    {{ $laporanReseps->links() }} 
                 </div>
             </div>
         </div>
@@ -467,34 +468,15 @@
     
     /* Lebar Kolom */
     .data-table-modern th:nth-child(1), 
-    .data-table-modern td:nth-child(1) { 
-        width: 16%; 
-        min-width: 150px;
-    }
-    
+    .data-table-modern td:nth-child(1) { width: 16%; min-width: 150px; }
     .data-table-modern th:nth-child(2), 
-    .data-table-modern td:nth-child(2) { 
-        width: 20%; 
-        min-width: 180px;
-    }
-    
+    .data-table-modern td:nth-child(2) { width: 20%; min-width: 180px; }
     .data-table-modern th:nth-child(3), 
-    .data-table-modern td:nth-child(3) { 
-        width: 16%; 
-        min-width: 140px;
-    }
-    
+    .data-table-modern td:nth-child(3) { width: 16%; min-width: 140px; }
     .data-table-modern th:nth-child(4), 
-    .data-table-modern td:nth-child(4) { 
-        width: 26%; 
-        min-width: 200px;
-    }
-    
+    .data-table-modern td:nth-child(4) { width: 26%; min-width: 200px; }
     .data-table-modern th:nth-child(5), 
-    .data-table-modern td:nth-child(5) { 
-        width: 22%; 
-        min-width: 180px;
-    }
+    .data-table-modern td:nth-child(5) { width: 22%; min-width: 180px; }
 
     .table-row {
         border-bottom: 1px solid #e5e7eb;
@@ -503,9 +485,7 @@
         opacity: 0;
     }
     
-    .table-row:hover { 
-        background: #f8fffe; 
-    }
+    .table-row:hover { background: #f8fffe; }
     
     .data-table-modern tbody td {
         padding: 18px 20px;
@@ -517,7 +497,6 @@
         background: #fff;
     }
     
-    /* Kolom Text Panjang */
     .data-table-modern tbody td:nth-child(4),
     .data-table-modern tbody td:nth-child(5) {
         max-height: 150px;
@@ -525,206 +504,84 @@
         font-size: 0.9rem;
     }
     
-    /* Custom Scrollbar */
     .data-table-modern tbody td:nth-child(4)::-webkit-scrollbar,
-    .data-table-modern tbody td:nth-child(5)::-webkit-scrollbar {
-        width: 6px;
-    }
-    
+    .data-table-modern tbody td:nth-child(5)::-webkit-scrollbar { width: 6px; }
     .data-table-modern tbody td:nth-child(4)::-webkit-scrollbar-track,
-    .data-table-modern tbody td:nth-child(5)::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-    
+    .data-table-modern tbody td:nth-child(5)::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
     .data-table-modern tbody td:nth-child(4)::-webkit-scrollbar-thumb,
-    .data-table-modern tbody td:nth-child(5)::-webkit-scrollbar-thumb {
-        background: #169400;
-        border-radius: 10px;
-    }
+    .data-table-modern tbody td:nth-child(5)::-webkit-scrollbar-thumb { background: #169400; border-radius: 10px; }
 
     .text-muted { color: #6b7280; }
 
     /* Patient Info */
-    .patient-info {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+    .patient-info { display: flex; align-items: center; gap: 12px; }
     .patient-avatar {
         width: 45px; height: 45px; border-radius: 50%;
         background: linear-gradient(135deg, #169400, #1cc200);
         color: white; display: flex; align-items: center; justify-content: center;
         font-weight: 700; font-size: 18px; flex-shrink: 0;
-        border: 2px solid #fff;
-        box-shadow: 0 2px 8px rgba(22, 148, 0, 0.15);
+        border: 2px solid #fff; box-shadow: 0 2px 8px rgba(22, 148, 0, 0.15);
     }
     .patient-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-    .patient-name { 
-        font-weight: 600; 
-        color: #1f2937;
-    }
+    .patient-name { font-weight: 600; color: #1f2937; }
     
     .time-badge {
-        display: inline-flex; 
-        align-items: center; 
-        gap: 8px;
-        padding: 8px 16px;
-        background: linear-gradient(135deg, #fff3cd, #ffe8a1);
-        color: #856404; 
-        border-radius: 20px;
-        font-weight: 600; 
-        font-size: 0.85rem;
-        white-space: nowrap;
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 8px 16px; background: linear-gradient(135deg, #fff3cd, #ffe8a1);
+        color: #856404; border-radius: 20px; font-weight: 600; font-size: 0.85rem; white-space: nowrap;
     }
 
-    .empty-state { 
-        text-align: center; 
-        padding: 60px 20px; 
-        color: #9ca3af; 
-    }
-    .empty-state i { 
-        font-size: 4rem; 
-        margin-bottom: 20px; 
-        opacity: 0.3; 
-    }
-    .empty-state p { 
-        margin: 0; 
-        font-size: 1.05rem; 
-        font-weight: 500; 
-    }
+    .empty-state { text-align: center; padding: 60px 20px; color: #9ca3af; }
+    .empty-state i { font-size: 4rem; margin-bottom: 20px; opacity: 0.3; }
+    .empty-state p { margin: 0; font-size: 1.05rem; font-weight: 500; }
 
     /* ===== CHART CONTAINER - FIXED ===== */
-    .chart-container-wrapper { 
-        padding: 30px;
-    }
-    
-    .view-content { 
-        display: none; 
-    }
-    .view-content.active { 
-        display: block; 
-        animation: fadeIn 0.5s ease; 
-    }
+    .chart-container-wrapper { padding: 30px; }
+    .view-content { display: none; }
+    .view-content.active { display: block; animation: fadeIn 0.5s ease; }
 
     /* Pagination */
     .pagination-container { 
-        margin-top: 20px; 
-        padding: 10px 20px; 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
+        margin-top: 20px; padding: 10px 20px; display: flex; 
+        justify-content: center; align-items: center; 
     }
-    .pagination { 
-        list-style: none; 
-        display: flex; 
-        gap: 5px; 
-    }
-    .pagination li a, .pagination li span {
-        padding: 8px 15px; 
-        text-decoration: none; 
-        color: #169400;
-        background: #f0f7f6; 
-        border-radius: 8px; 
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    .pagination li a:hover { 
-        background: #169400; 
-        color: white; 
-    }
-    .pagination li.active span { 
-        background: #169400; 
-        color: white; 
-    }
-    .pagination li.disabled span { 
-        background: #f3f4f6; 
-        color: #b0b0b0; 
-    }
+    
+    /* Override Bootstrap Pagination Styles if still present */
+    .pagination-container nav { width: 100%; display: flex; justify-content: center; }
+    .pagination-container .pagination { margin-bottom: 0; }
+    .pagination-container .page-item.active .page-link { background-color: #169400; border-color: #169400; }
+    .pagination-container .page-link { color: #169400; }
 
     /* ===== ANIMATIONS ===== */
-    @keyframes fadeInDown { 
-        from { opacity: 0; transform: translateY(-20px); } 
-        to { opacity: 1; transform: translateY(0); } 
-    }
-    @keyframes fadeInUp { 
-        from { opacity: 0; transform: translateY(20px); } 
-        to { opacity: 1; transform: translateY(0); } 
-    }
-    @keyframes fadeIn { 
-        from { opacity: 0; } 
-        to { opacity: 1; } 
-    }
+    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     /* ===== RESPONSIVE ===== */
     @media (max-width: 992px) {
-        .filter-controls-modern { 
-            flex-direction: column; 
-            align-items: stretch; 
-        }
-        .filter-buttons-group, 
-        .view-toggle-group { 
-            width: 100%; 
-        }
-        .btn-action-primary { 
-            flex: 1; 
-            justify-content: center; 
-        }
+        .filter-controls-modern { flex-direction: column; align-items: stretch; }
+        .filter-buttons-group, .view-toggle-group { width: 100%; }
+        .btn-action-primary { flex: 1; justify-content: center; }
     }
     
     @media (max-width: 768px) {
-        .header-content { 
-            flex-direction: column; 
-            padding: 25px 20px; 
-        }
-        .header-text { 
-            text-align: center; 
-        }
-        .page-title { 
-            font-size: 1.6rem; 
-        }
-        .kpi-grid-modern { 
-            grid-template-columns: 1fr; 
-        }
-        .filter-buttons-group { 
-            flex-direction: column; 
-        }
-        .table-card-header { 
-            flex-direction: column; 
-            align-items: flex-start; 
-        }
-        .data-table-modern { 
-            font-size: 0.85rem; 
-        }
-        .data-table-modern thead th, 
-        .data-table-modern tbody td { 
-            padding: 12px 10px; 
-        }
-        .patient-avatar { 
-            width: 40px; 
-            height: 40px; 
-            font-size: 16px; 
-        }
-        .time-badge {
-            padding: 6px 12px;
-            font-size: 0.75rem;
-        }
-        .data-table-modern tbody td:nth-child(4),
-        .data-table-modern tbody td:nth-child(5) {
-            max-height: 120px;
-        }
+        .header-content { flex-direction: column; padding: 25px 20px; }
+        .header-text { text-align: center; }
+        .page-title { font-size: 1.6rem; }
+        .kpi-grid-modern { grid-template-columns: 1fr; }
+        .filter-buttons-group { flex-direction: column; }
+        .table-card-header { flex-direction: column; align-items: flex-start; }
+        .data-table-modern { font-size: 0.85rem; }
+        .data-table-modern thead th, .data-table-modern tbody td { padding: 12px 10px; }
+        .patient-avatar { width: 40px; height: 40px; font-size: 16px; }
+        .time-badge { padding: 6px 12px; font-size: 0.75rem; }
+        .data-table-modern tbody td:nth-child(4), .data-table-modern tbody td:nth-child(5) { max-height: 120px; }
     }
     
     @media (max-width: 576px) {
-        .page-title { 
-            font-size: 1.4rem; 
-        }
-        .section-header h2 { 
-            font-size: 1.2rem; 
-        }
-        .view-toggle-group { 
-            flex-direction: column; 
-        }
+        .page-title { font-size: 1.4rem; }
+        .section-header h2 { font-size: 1.2rem; }
+        .view-toggle-group { flex-direction: column; }
     }
 </style>
 @endpush
@@ -764,41 +621,28 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true, // ✅ DIUBAH KE true (sama dengan Admin)
+                    maintainAspectRatio: true, 
                     scales: { 
                         y: { 
                             beginAtZero: true,
-                            // ✅ HAPUS ticks callback - biarkan default
-                            grid: {
-                                color: 'rgba(22, 148, 0, 0.1)'
-                            }
+                            grid: { color: 'rgba(22, 148, 0, 0.1)' }
                         },
                         x: {
-                            grid: {
-                                display: false
-                            }
+                            grid: { display: false }
                         }
                     },
                     plugins: { 
                         tooltip: { 
                             backgroundColor: '#0f7300',
                             padding: 12,
-                            titleFont: { 
-                                size: 14, 
-                                weight: 'bold' 
-                            },
-                            bodyFont: { 
-                                size: 13 
-                            }
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 }
                         },
                         legend: {
                             display: true,
                             position: 'top',
                             labels: {
-                                font: { 
-                                    size: 13, 
-                                    weight: '600' 
-                                },
+                                font: { size: 13, weight: '600' },
                                 color: '#556E85'
                             }
                         }

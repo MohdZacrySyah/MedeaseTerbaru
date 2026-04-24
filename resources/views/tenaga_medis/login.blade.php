@@ -11,6 +11,7 @@
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
@@ -55,6 +56,7 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
+        
         .illustration-logo img { width: 50px; height: auto; }
 
         .illustration-title {
@@ -93,35 +95,56 @@
         }
 
         .form-group { margin-bottom: 20px; }
-        .form-label { font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 8px; display: block; }
+        
+        .form-label { 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+            color: #374151; 
+            margin-bottom: 8px; 
+            display: block; 
+        }
 
         .input-wrapper { position: relative; }
+        
         .form-input {
-            width: 100%; padding: 14px 20px 14px 45px;
+            width: 100%; 
+            padding: 14px 20px 14px 45px;
             border: 2px solid #e5e7eb;
             border-radius: 12px;
             font-size: 0.95rem;
             background-color: #fafafa;
             transition: all 0.3s ease;
         }
+        
         .form-input-icon {
             position: absolute;
             left: 18px;
             top: 50%;
             transform: translateY(-50%);
             color: #9ca3af;
+            transition: color 0.3s ease;
         }
 
-        .form-input:focus {
-            outline: none;
+        .input-wrapper:focus-within .form-input {
             border-color: #169400;
             background-color: #fff;
             box-shadow: 0 0 0 4px rgba(22, 148, 0, 0.1);
         }
-        .form-input:focus + .form-input-icon { color: #169400; }
+        
+        .input-wrapper:focus-within .form-input-icon { 
+            color: #169400; 
+        }
 
+        /* Error Input State */
+        .form-input.input-error {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+
+        /* Submit Button - DIUBAH (Hapus animasi hover & box shadow berlebihan) */
         .btn-submit {
-            width: 100%; padding: 16px;
+            width: 100%; 
+            padding: 16px;
             background: linear-gradient(135deg, #169400 0%, #1cc200 100%);
             color: white;
             border: none;
@@ -129,10 +152,38 @@
             font-weight: 600;
             font-size: 1.05rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(22, 148, 0, 0.25);
+            transition: background 0.3s ease;
+            margin-top: 10px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(22, 148, 0, 0.35); }
+        
+        .btn-submit:hover { 
+            background: linear-gradient(135deg, #1cc200 0%, #169400 100%);
+        }
+
+        .btn-submit.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-submit.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: buttonSpinner 0.6s linear infinite;
+        }
+
+        @keyframes buttonSpinner {
+            to { transform: rotate(360deg); }
+        }
 
         .alert {
             padding: 15px 20px;
@@ -141,8 +192,20 @@
             font-size: 0.9rem;
             font-weight: 500;
             display: flex;
-            gap: 10px;
+            align-items: flex-start;
+            gap: 12px;
         }
+        
+        .alert i {
+            margin-top: 3px;
+            font-size: 1.1rem;
+        }
+
+        .alert ul {
+            margin-top: 5px;
+            padding-left: 20px;
+        }
+
         .alert-error {
             background-color: #fef2f2;
             color: #991b1b;
@@ -183,7 +246,7 @@
 
             @if ($errors->any())
                 <div class="alert alert-error">
-                    <i class="fas fa-exclamation-triangle" style="margin-top:3px;"></i>
+                    <i class="fas fa-exclamation-triangle"></i>
                     <div>
                         <strong>Login Gagal</strong>
                         <ul>
@@ -195,7 +258,9 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('tenaga-medis.login.post') }}">
+            <div id="jsErrors"></div>
+
+            <form method="POST" action="{{ route('tenaga-medis.login.post') }}" id="loginForm" novalidate>
                 @csrf
 
                 <div class="form-group">
@@ -214,10 +279,98 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn-submit">Login</button>
+                <button type="submit" class="btn-submit">
+                    <span>Login</span>
+                </button>
             </form>
         </div>
     </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const submitBtn = document.querySelector('.btn-submit');
+    const jsErrorsBox = document.getElementById('jsErrors');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+
+    // Validasi Form JS saat submit
+    loginForm.addEventListener('submit', function(e) {
+        let isValid = true;
+        let errorMessages = [];
+
+        // Hapus pesan error & style error sebelumnya
+        jsErrorsBox.innerHTML = '';
+        [emailInput, passwordInput].forEach(el => {
+            el.classList.remove('input-error');
+        });
+
+        // 1. Validasi Email
+        if (emailInput.value.trim() === '') {
+            isValid = false;
+            emailInput.classList.add('input-error');
+            errorMessages.push('Email tidak boleh kosong.');
+        } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailInput.value)) {
+            isValid = false;
+            emailInput.classList.add('input-error');
+            errorMessages.push('Format email tidak valid.');
+        }
+
+        // 2. Validasi Password
+        if (passwordInput.value.trim() === '') {
+            isValid = false;
+            passwordInput.classList.add('input-error');
+            errorMessages.push('Password tidak boleh kosong.');
+        }
+
+        // Jika tidak valid, hentikan pengiriman form dan tampilkan error
+        if (!isValid) {
+            e.preventDefault();
+            
+            let errorHtml = `
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <strong>Login Tertunda</strong>
+                        <ul>
+            `;
+            errorMessages.forEach(msg => {
+                errorHtml += `<li>${msg}</li>`;
+            });
+            errorHtml += `</ul></div></div>`;
+            
+            jsErrorsBox.innerHTML = errorHtml;
+        } else {
+            // Jika valid, izinkan form terkirim dan munculkan efek loading pada tombol
+            submitBtn.classList.add('loading');
+        }
+    });
+
+    // Menghilangkan efek error saat user mulai mengetik lagi
+    document.querySelectorAll('.form-input').forEach(input => {
+        input.addEventListener('input', function() {
+            this.classList.remove('input-error');
+            if (jsErrorsBox.innerHTML !== '') {
+                jsErrorsBox.innerHTML = ''; 
+            }
+        });
+
+        // Input Animation on Focus (Sedikit membesar)
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.02)';
+            this.parentElement.style.transition = 'transform 0.3s ease';
+        });
+
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+        });
+    });
+
+    // Disable form resubmission on page refresh
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
+});
+</script>
 </body>
 </html>

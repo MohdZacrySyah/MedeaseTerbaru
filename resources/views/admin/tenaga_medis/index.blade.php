@@ -1320,6 +1320,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const formMethod = document.getElementById('formMethod');
     const formModeInput = document.getElementById('form_mode');
     const recordIdInput = document.getElementById('record_id');
+    const errorsBox = document.getElementById('modalErrors'); // Tambahan variabel
 
     // === Variabel Modal Konfirmasi Hapus ===
     const deleteModal = document.getElementById('deleteConfirmModal');
@@ -1336,10 +1337,15 @@ document.addEventListener('DOMContentLoaded', function() {
     window.openModal = function(mode = 'create', data = null) {
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
-        const errorsBox = document.getElementById('modalErrors');
-        errorsBox.innerHTML = '';
-
+        
+        // Reset form & hapus efek error sebelumnya
         form.reset();
+        errorsBox.innerHTML = '';
+        document.querySelectorAll('.form-control').forEach(el => {
+            el.style.borderColor = '';
+            el.style.backgroundColor = '';
+        });
+
         formMethod.value = '';
         formModeInput.value = mode;
         recordIdInput.value = '';
@@ -1380,6 +1386,79 @@ document.addEventListener('DOMContentLoaded', function() {
         formToDelete = null; 
     }
 
+    // === VALIDASI FORM SEBELUM SUBMIT ===
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        let errorMessages = [];
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const mode = formModeInput.value;
+
+        // Reset style
+        [nameInput, emailInput, passwordInput].forEach(el => {
+            el.style.borderColor = '';
+            el.style.backgroundColor = '';
+        });
+
+        // Validasi Nama
+        if (nameInput.value.trim() === '') {
+            isValid = false;
+            nameInput.style.borderColor = '#ef4444';
+            nameInput.style.backgroundColor = '#fef2f2';
+            errorMessages.push('Nama Lengkap tidak boleh kosong.');
+        }
+
+        // Validasi Email
+        if (emailInput.value.trim() === '') {
+            isValid = false;
+            emailInput.style.borderColor = '#ef4444';
+            emailInput.style.backgroundColor = '#fef2f2';
+            errorMessages.push('Email tidak boleh kosong.');
+        } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailInput.value)) {
+            isValid = false;
+            emailInput.style.borderColor = '#ef4444';
+            emailInput.style.backgroundColor = '#fef2f2';
+            errorMessages.push('Format email tidak valid.');
+        }
+
+        // Validasi Password (Hanya wajib saat buat akun baru)
+        if (mode === 'create' && passwordInput.value.trim() === '') {
+            isValid = false;
+            passwordInput.style.borderColor = '#ef4444';
+            passwordInput.style.backgroundColor = '#fef2f2';
+            errorMessages.push('Password wajib diisi untuk akun baru.');
+        }
+
+        // Jika tidak valid, cegah form terkirim & tampilkan error
+        if (!isValid) {
+            e.preventDefault();
+            
+            let errorHtml = `
+                <div>
+                    <strong>Terjadi kesalahan:</strong>
+                    <ul>
+            `;
+            errorMessages.forEach(msg => {
+                errorHtml += `<li>${msg}</li>`;
+            });
+            errorHtml += `</ul></div>`;
+            
+            errorsBox.innerHTML = errorHtml;
+            
+            // Scroll ke atas modal agar error terlihat
+            document.querySelector('.modal-content').scrollTop = 0;
+        }
+    });
+
+    // Menghilangkan efek merah saat user mulai mengetik
+    document.querySelectorAll('.form-control').forEach(input => {
+        input.addEventListener('input', function() {
+            this.style.borderColor = '';
+            this.style.backgroundColor = '';
+        });
+    });
+
     // === Event Listeners Manual ===
     btnTambah.addEventListener('click', function() { openModal('create'); });
     closeDeleteBtn.addEventListener('click', closeDeleteModal);
@@ -1403,26 +1482,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // === AUTO LOAD & REBIND EVENTS ===
-    
-    // Fungsi untuk memasang event listener pada tombol tabel (Edit & Hapus)
-    // Dipisahkan agar bisa dipanggil ulang setelah Auto Refresh
     window.bindTableEvents = function() {
-        // Edit Button
         document.querySelectorAll('.btn-edit').forEach(btn => {
-            // Hapus listener lama untuk mencegah duplikasi
             btn.removeEventListener('click', handleEditClick);
-            // Pasang listener baru
             btn.addEventListener('click', handleEditClick);
         });
 
-        // Delete Button
         document.querySelectorAll('.btn-delete').forEach(btn => {
             btn.removeEventListener('click', handleDeleteClick);
             btn.addEventListener('click', handleDeleteClick);
         });
     };
 
-    // Handler Terpisah
     function handleEditClick() {
         const data = {
             id: this.dataset.id,
@@ -1437,21 +1508,17 @@ document.addEventListener('DOMContentLoaded', function() {
         openDeleteModal();
     }
 
-    // Jalankan bindTableEvents saat pertama kali load
     bindTableEvents();
 
-    // Inisialisasi Auto Refresh Global
     if (typeof window.initAutoRefresh === 'function') {
         window.initAutoRefresh([
-            '#total-count', // Jumlah Akun
-            '#table-body'   // Isi Tabel
+            '#total-count',
+            '#table-body' 
         ]);
     }
 
-    // Fungsi Rebind Global (Dipanggil otomatis oleh script layout saat refresh)
     window.rebindEvents = function() {
         bindTableEvents();
-        console.log('♻️ Table events rebound!');
     };
 
     // Auto-hide success alert

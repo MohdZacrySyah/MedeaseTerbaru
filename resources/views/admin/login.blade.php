@@ -6,7 +6,6 @@
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}" />
     <title>Login Admin - Praktek Bersama</title>
 
-    <!-- Font, Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -135,6 +134,7 @@
             top: 50%;
             transform: translateY(-50%);
             color: #9ca3af;
+            transition: color 0.3s ease;
         }
 
         .input-wrapper:focus-within .form-input {
@@ -147,6 +147,13 @@
             color: #169400;
         }
 
+        /* Error Input State */
+        .form-input.input-error {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+
+        /* Submit Button */
         .btn-submit {
             width: 100%;
             padding: 16px;
@@ -159,6 +166,11 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-top: 10px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .btn-submit:hover {
@@ -166,14 +178,48 @@
             box-shadow: 0 6px 20px rgba(22, 148, 0, 0.35);
         }
 
+        .btn-submit.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-submit.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: buttonSpinner 0.6s linear infinite;
+        }
+
+        @keyframes buttonSpinner {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Alert Styling */
         .alert-error {
             background-color: #fef2f2;
             color: #991b1b;
-            border: 1px solid #fca5a5;
-            padding: 15px;
+            border: 2px solid #fca5a5;
+            padding: 15px 20px;
             border-radius: 12px;
             margin-bottom: 20px;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .alert-error i {
+            font-size: 1.2rem;
+            margin-top: 2px;
+        }
+
+        .alert-error ul {
+            margin-top: 5px;
+            padding-left: 20px;
         }
 
         .other-login {
@@ -215,7 +261,6 @@
 
 <div class="login-wrapper">
     
-    <!-- Bagian Kiri -->
     <div class="login-illustration">
         <div class="illustration-logo">
             <img src="{{ asset('images/logo.png') }}" alt="Logo">
@@ -226,7 +271,6 @@
         </p>
     </div>
 
-    <!-- Bagian Kanan (Form) -->
     <div class="login-form-container">
         
         <h2 class="form-title"><i class="fas fa-user-shield"></i> Login Admin</h2>
@@ -234,11 +278,21 @@
 
         @if ($errors->any())
             <div class="alert-error">
-                Email atau password salah.
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Login Gagal</strong>
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             </div>
         @endif
 
-        <form action="{{ route('admin.login.post') }}" method="POST">
+        <div id="jsErrors"></div>
+
+        <form action="{{ route('admin.login.post') }}" method="POST" id="loginForm" novalidate>
             @csrf
 
             <div class="form-group">
@@ -257,17 +311,104 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-submit">Login</button>
+            <button type="submit" class="btn-submit">
+                <span>Login</span>
+            </button>
         </form>
 
         <div class="other-login">
-            <a href="{{ route('login') }}">Login sebagai Pasien</a><br><br>
-            {{-- <a href="{{ route('admin.password.request') }}">Lupa Password?</a> --}}
+            <a href="{{ route('login') }}">Login sebagai Pasien</a>
         </div>
 
     </div>
-
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const submitBtn = document.querySelector('.btn-submit');
+    const jsErrorsBox = document.getElementById('jsErrors');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+
+    // Validasi Form JS saat submit
+    loginForm.addEventListener('submit', function(e) {
+        let isValid = true;
+        let errorMessages = [];
+
+        // Hapus pesan error & style error sebelumnya
+        jsErrorsBox.innerHTML = '';
+        [emailInput, passwordInput].forEach(el => {
+            el.classList.remove('input-error');
+        });
+
+        // 1. Validasi Email
+        if (emailInput.value.trim() === '') {
+            isValid = false;
+            emailInput.classList.add('input-error');
+            errorMessages.push('Email tidak boleh kosong.');
+        } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailInput.value)) {
+            isValid = false;
+            emailInput.classList.add('input-error');
+            errorMessages.push('Format email tidak valid.');
+        }
+
+        // 2. Validasi Password
+        if (passwordInput.value.trim() === '') {
+            isValid = false;
+            passwordInput.classList.add('input-error');
+            errorMessages.push('Password tidak boleh kosong.');
+        }
+
+        // Jika tidak valid, hentikan pengiriman form dan tampilkan error
+        if (!isValid) {
+            e.preventDefault();
+            
+            let errorHtml = `
+                <div class="alert-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <strong>Login Tertunda</strong>
+                        <ul>
+            `;
+            errorMessages.forEach(msg => {
+                errorHtml += `<li>${msg}</li>`;
+            });
+            errorHtml += `</ul></div></div>`;
+            
+            jsErrorsBox.innerHTML = errorHtml;
+        } else {
+            // Jika valid, izinkan form terkirim dan munculkan efek loading pada tombol
+            submitBtn.classList.add('loading');
+        }
+    });
+
+    // Menghilangkan efek error saat user mulai mengetik lagi
+    document.querySelectorAll('.form-input').forEach(input => {
+        input.addEventListener('input', function() {
+            this.classList.remove('input-error');
+            if (jsErrorsBox.innerHTML !== '') {
+                jsErrorsBox.innerHTML = ''; 
+            }
+        });
+
+        // Input Animation on Focus (Sedikit membesar)
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.02)';
+            this.parentElement.style.transition = 'transform 0.3s ease';
+        });
+
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+        });
+    });
+
+    // Disable form resubmission on page refresh
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
+});
+</script>
 
 </body>
 </html>

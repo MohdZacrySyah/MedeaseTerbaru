@@ -49,7 +49,6 @@
     <div class="layanan-list" id="layanan-list-container">
         @forelse($jadwals as $index => $jadwal)
             <div class="layanan-item" 
-                 {{-- Animasi dihapus --}}
                  data-url="{{ route('daftar.form.json', $jadwal->id) }}" 
                  data-jadwal-id="{{ $jadwal->id }}"
                  data-fallback="{{ route('daftar.form', $jadwal->id) }}">
@@ -325,15 +324,45 @@
         background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(231, 76, 60, 0.25));
         border: 2px solid rgba(231, 76, 60, 0.3);
     }
+
+    /* Styling tambahan untuk custom validation JS error */
+    .custom-alert-error {
+        background-color: #fef2f2;
+        color: #991b1b;
+        border: 2px solid #fca5a5;
+        padding: 18px 24px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        font-weight: 500;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .custom-alert-error i {
+        font-size: 1.3rem;
+        margin-top: 3px;
+    }
+
+    .custom-alert-error ul {
+        margin: 5px 0 0 0;
+        padding-left: 20px;
+    }
     
     .alert i { 
         font-size: 1.5rem;
         animation: pulse 2s ease-in-out infinite;
     }
-    
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.15); }
+
+    /* Styling untuk Input Error JavaScript */
+    .form-control.input-error {
+        border-color: #ef4444 !important;
+        background-color: #fef2f2 !important;
+    }
+    [data-theme="dark"] .form-control.input-error {
+        border-color: #ef4444 !important;
+        background-color: rgba(239, 68, 68, 0.1) !important;
     }
 
     /* ===== LAYANAN LIST PREMIUM (NO ANIMATION) ===== */
@@ -408,11 +437,6 @@
         position: relative; 
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         animation: float 4s ease-in-out infinite;
-    }
-    
-    @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-5px); }
     }
     
     .layanan-item:hover .layanan-avatar { 
@@ -1066,15 +1090,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.rebindEvents = function() {
         bindServiceEvents();
-        console.log('♻️ Service list refreshed and events rebound!');
     };
 
     function bindServiceEvents() {
         const items = document.querySelectorAll('.layanan-item');
         items.forEach(item => {
-            // Remove old listener to avoid duplicates
             item.removeEventListener('click', handleServiceClick);
-            // Add new listener
             item.addEventListener('click', handleServiceClick);
         });
     }
@@ -1082,7 +1103,6 @@ document.addEventListener('DOMContentLoaded', function () {
     async function handleServiceClick(event) {
         event.preventDefault();
         
-        // Use currentTarget because the listener is on the item wrapper
         const item = event.currentTarget;
         const jsonUrl = item.dataset.url;
         
@@ -1096,7 +1116,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const data = await response.json();
 
             closedDates = data.closed_dates || [];
-            console.log('Tanggal tertutup:', closedDates);
 
             const formHtml = `
                 <div class="form-header">
@@ -1105,7 +1124,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         <strong>${data.dokter_name}</strong> - ${data.layanan_name}
                     </p>
                 </div>
-                <form action="${data.form_action}" method="POST" id="pendaftaranForm">
+                
+                <div id="jsErrors"></div>
+
+                <form action="${data.form_action}" method="POST" id="pendaftaranForm" novalidate>
                     @csrf
                     <input type="hidden" name="nama_layanan" value="${data.layanan_name}">
                     <input type="hidden" name="jadwal_praktek_id" value="${data.jadwal_id}">
@@ -1202,25 +1224,88 @@ document.addEventListener('DOMContentLoaded', function () {
                 closeModal();
             });
 
+            // JS Form Validation & Submission
             const dynamicForm = document.getElementById('pendaftaranForm');
             if (dynamicForm) {
+                const formInputs = dynamicForm.querySelectorAll('.form-control');
+                const jsErrorsBox = document.getElementById('jsErrors');
+                
+                // Hapus style error saat user mulai ngetik lagi
+                formInputs.forEach(input => {
+                    input.addEventListener('input', function() {
+                        this.classList.remove('input-error');
+                        if(jsErrorsBox.innerHTML !== '') {
+                            jsErrorsBox.innerHTML = ''; 
+                        }
+                    });
+                });
+
                 dynamicForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     
-                    const selectedDate = document.getElementById('modal_jadwal_datepicker').value;
+                    let isValid = true;
+                    let errorMessages = [];
                     
-                    if (closedDates.includes(selectedDate)) {
-                        alert('❌ Dokter tidak tersedia pada tanggal yang Anda pilih. Silakan pilih tanggal lain.');
+                    const inputsToValidate = [
+                        { id: 'modal_nama_lengkap', name: 'Nama Lengkap' },
+                        { id: 'modal_tanggal_lahir', name: 'Tanggal Lahir' },
+                        { id: 'modal_alamat', name: 'Alamat' },
+                        { id: 'modal_no_telepon', name: 'No Telepon/Whatsapp' },
+                        { id: 'modal_jadwal_datepicker', name: 'Tanggal Kunjungan' },
+                        { id: 'modal_keluhan', name: 'Jenis Keluhan/Gejala' },
+                        { id: 'modal_lama_keluhan', name: 'Sejak Kapan (Lama Keluhan)' }
+                    ];
+
+                    // Reset semua visual error sebelumnya
+                    jsErrorsBox.innerHTML = '';
+                    formInputs.forEach(el => el.classList.remove('input-error'));
+
+                    // Cek kelengkapan field yang wajib diisi
+                    inputsToValidate.forEach(field => {
+                        const inputEl = document.getElementById(field.id);
+                        if (!inputEl.value.trim()) {
+                            isValid = false;
+                            inputEl.classList.add('input-error');
+                            errorMessages.push(`${field.name} wajib diisi.`);
+                        }
+                    });
+
+                    // Validasi khusus tanggal tutup/cuti
+                    const selectedDate = document.getElementById('modal_jadwal_datepicker').value;
+                    if (selectedDate && closedDates.includes(selectedDate)) {
+                        isValid = false;
+                        document.getElementById('modal_jadwal_datepicker').classList.add('input-error');
+                        errorMessages.push('Dokter tidak tersedia pada tanggal yang Anda pilih. Silakan pilih tanggal lain.');
+                    }
+
+                    // Tampilkan kotak pesan error
+                    if (!isValid) {
+                        let errorHtml = `
+                            <div class="custom-alert-error">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div>
+                                    <strong>Pendaftaran Tertunda</strong>
+                                    <ul>
+                        `;
+                        errorMessages.forEach(msg => {
+                            errorHtml += `<li>${msg}</li>`;
+                        });
+                        errorHtml += `</ul></div></div>`;
+                        
+                        jsErrorsBox.innerHTML = errorHtml;
+                        
+                        // Scroll pelan-pelan ke atas form di dalam modal
+                        modalContent.scrollTo({ top: 0, behavior: 'smooth' });
                         return false;
                     }
                     
+                    // Kalau valid semua, buka modal konfirmasi pengiriman
                     formToSubmit = this;
                     openConfirmModal();
                 });
             }
 
         } catch (error) {
-            console.error('Gagal mengambil data form:', error);
             modalContent.innerHTML = `
                 <div style="text-align:center; padding: 60px 40px;">
                     <i class="fas fa-exclamation-circle" style="font-size: 4rem; color: #ef4444; margin-bottom: 20px; display: block;"></i>
@@ -1231,10 +1316,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Initialize events initially
     bindServiceEvents();
 
-    // Auto-hide Alert
+    // Auto-hide Alert (Success/Failed from backend)
     const alert = document.getElementById('autoHideAlert');
     if (alert) {
         setTimeout(() => {

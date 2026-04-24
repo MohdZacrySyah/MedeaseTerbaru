@@ -43,28 +43,24 @@
 
         html { scroll-behavior: smooth; }
 
-        /* --- PERBAIKAN SCROLLING DIMULAI DI SINI --- */
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #f0fdf4, #dcfce7);
             display: flex;
             justify-content: center;
             align-items: center;
-            /* Hapus min-height: 100vh agar body bisa lebih tinggi dari viewport */
-            /* Tambahkan padding vertikal yang cukup sebagai ganti min-height */
             padding: 20px;
-            padding-top: 100px; /* Ruang agar tidak terpotong tombol fixed atas */
+            padding-top: 100px;
             padding-bottom: 100px; 
             position: relative;
-            overflow-x: hidden; /* Mencegah scroll horizontal yang tidak diinginkan */
-            overflow-y: auto; /* Memastikan vertical scrolling diaktifkan */
+            overflow-x: hidden;
+            overflow-y: auto;
             transition: background 0.3s ease;
         }
 
         [data-theme="dark"] body {
             background: linear-gradient(135deg, #1f2937, #111827);
         }
-        /* --- PERBAIKAN SCROLLING SELESAI DI SINI --- */
 
         /* Animated Background */
         body::before {
@@ -121,7 +117,6 @@
             0%, 100% { transform: translateY(100vh) scale(0); opacity: 0; }
             10% { opacity: 1; }
             90% { opacity: 1; }
-            /* Mengubah translateY(-100px) menjadi translateY(-50px) agar partikel hilang lebih cepat di atas */
             100% { transform: translateY(-50px) scale(1); opacity: 0; }
         }
 
@@ -219,7 +214,7 @@
             position: relative;
             z-index: 1;
         }
-        
+
         /* Login Wrapper */
         .login-wrapper {
             width: 100%;
@@ -243,17 +238,6 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: scale(0.95) translateY(30px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        /* Shake Animation */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-            20%, 40%, 60%, 80% { transform: translateX(10px); }
-        }
-
-        .login-wrapper.shake {
-            animation: shake 0.5s ease-in-out;
         }
 
         /* Kolom Kiri (Ilustrasi) */
@@ -453,6 +437,17 @@
             transform: translateY(-50%) scale(1.15);
         }
 
+        /* Error Input State */
+        .form-input.input-error {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+
+        [data-theme="dark"] .form-input.input-error {
+            border-color: #ef4444 !important;
+            background-color: rgba(239, 68, 68, 0.1) !important;
+        }
+
         /* Floating Labels */
         .floating-label {
             position: absolute;
@@ -592,7 +587,7 @@
             color: var(--p2);
         }
 
-        /* Submit Button */
+        /* Submit Button - DIUBAH (Animasi dan Box Shadow dihapus) */
         .btn-submit {
             width: 100%;
             padding: 19px;
@@ -604,42 +599,16 @@
             font-size: 1.12rem;
             font-family: 'Poppins', sans-serif;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 25px rgba(57, 166, 22, 0.35);
+            transition: background 0.3s ease;
             position: relative;
-            overflow: hidden;
-            animation: slideInLeft 0.6s ease-out 0.5s backwards;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
         }
 
-        .btn-submit::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.25);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.6s ease, height 0.6s ease;
-        }
-
-        .btn-submit:hover::before {
-            width: 500px;
-            height: 500px;
-        }
-
         .btn-submit:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 15px 40px rgba(57, 166, 22, 0.45);
-        }
-
-        .btn-submit:active {
-            transform: translateY(-2px);
+            background: var(--grad-reverse);
         }
 
         .btn-submit i,
@@ -666,23 +635,6 @@
 
         @keyframes buttonSpinner {
             to { transform: rotate(360deg); }
-        }
-
-        /* Ripple Effect */
-        .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.6);
-            transform: scale(0);
-            animation: rippleEffect 0.6s ease-out;
-            pointer-events: none;
-        }
-
-        @keyframes rippleEffect {
-            to {
-                transform: scale(4);
-                opacity: 0;
-            }
         }
 
         /* Social Login */
@@ -858,7 +810,6 @@
 
         /* Responsive */
         @media (max-width: 768px) {
-            /* Perubahan untuk Scrolling di Mobile */
             body {
                 padding-top: 90px;
                 padding-bottom: 90px;
@@ -995,7 +946,9 @@
                 </div>
             @endif
 
-            <form action="{{ route('login.proses') }}" method="POST" id="loginForm">
+            <div id="jsErrors"></div>
+
+            <form action="{{ route('login.proses') }}" method="POST" id="loginForm" novalidate>
                 @csrf
 
                 <div class="floating-label-group">
@@ -1109,43 +1062,80 @@
         }
     }
 
-    // Form Submit with Ripple
+    // Form Validation & Submit Handlers
     const loginForm = document.getElementById('loginForm');
     const submitBtn = document.querySelector('.btn-submit');
+    const jsErrorsBox = document.getElementById('jsErrors');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
 
-    // Ripple Effect on Button Click
-    submitBtn.addEventListener('click', function(e) {
-        const ripple = document.createElement('span');
-        ripple.classList.add('ripple');
-        
-        const rect = this.getBoundingClientRect();
-        const size = Math.max(rect.width, rect.height);
-        const x = e.clientX - rect.left - size / 2;
-        const y = e.clientY - rect.top - size / 2;
-        
-        ripple.style.width = ripple.style.height = size + 'px';
-        ripple.style.left = x + 'px';
-        ripple.style.top = y + 'px';
-        
-        this.appendChild(ripple);
-        setTimeout(() => ripple.remove(), 600);
-    });
-
-    // Form Submit with simple Loading class on button
+    // JS Validation on Submit
     loginForm.addEventListener('submit', function(e) {
-        if (this.checkValidity()) {
-            // Tambahkan class loading ke tombol
+        let isValid = true;
+        let errorMessages = [];
+
+        // Hapus pesan error sebelumnya
+        jsErrorsBox.innerHTML = '';
+        [emailInput, passwordInput].forEach(el => {
+            el.classList.remove('input-error');
+        });
+
+        // 1. Validasi Email
+        if (emailInput.value.trim() === '') {
+            isValid = false;
+            emailInput.classList.add('input-error');
+            errorMessages.push('Email Address tidak boleh kosong.');
+        } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailInput.value)) {
+            isValid = false;
+            emailInput.classList.add('input-error');
+            errorMessages.push('Format email tidak valid.');
+        }
+
+        // 2. Validasi Password
+        if (passwordInput.value.trim() === '') {
+            isValid = false;
+            passwordInput.classList.add('input-error');
+            errorMessages.push('Password tidak boleh kosong.');
+        }
+
+        // Jika ada yang tidak valid, batalkan submit dan tampilkan box error
+        if (!isValid) {
+            e.preventDefault();
+            
+            let errorHtml = `
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <strong>Login Tertunda</strong>
+                        <ul>
+            `;
+            errorMessages.forEach(msg => {
+                errorHtml += `<li>${msg}</li>`;
+            });
+            errorHtml += `</ul></div></div>`;
+            
+            jsErrorsBox.innerHTML = errorHtml;
+            
+        } else {
+            // Valid, izinkan form disubmit & tampilkan loading spinner
             submitBtn.classList.add('loading');
         }
     });
 
-    // Enhanced Form Validation with Visual Feedback
-    const emailInput = document.getElementById('email');
+    // Menghilangkan efek error saat user mulai mengetik lagi
+    document.querySelectorAll('.form-input').forEach(input => {
+        input.addEventListener('input', function() {
+            this.classList.remove('input-error');
+            if(jsErrorsBox.innerHTML !== '') {
+                jsErrorsBox.innerHTML = ''; 
+            }
+        });
+    });
 
+    // Enhanced Form Validation with Visual Feedback on Blur
     emailInput.addEventListener('blur', function() {
-        // Hanya tambahkan/hapus kelas validasi saat pengguna meninggalkan input
         if (this.value) {
-            if (this.checkValidity()) {
+            if (this.checkValidity() && !this.classList.contains('input-error')) {
                 this.classList.add('success');
                 this.classList.remove('invalid');
             } else {
@@ -1157,12 +1147,9 @@
         }
     });
 
-    const passwordInput = document.getElementById('password');
-    
     passwordInput.addEventListener('blur', function() {
          if (this.value) {
-            // Contoh validasi sederhana: minimal 6 karakter
-            if (this.value.length >= 6) {
+            if (this.value.length >= 6 && !this.classList.contains('input-error')) {
                 this.classList.add('valid');
                 this.classList.remove('invalid');
             } else {
@@ -1185,32 +1172,20 @@
         }, 4000);
     }
 
-    // Shake animation on error (menggunakan sintaks Blade untuk mengecek error)
-    const loginWrapper = document.querySelector('.login-wrapper');
-    @if ($errors->any())
-        loginWrapper.classList.add('shake');
-        setTimeout(() => loginWrapper.classList.remove('shake'), 500);
-    @endif
-
-    // Social Login Handlers (Peringatan untuk Facebook/Link Kosong)
+    // Social Login Handlers
     document.querySelectorAll('.social-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
-            // Check if button has valid href (not # or empty)
             const hasValidHref = this.href && this.href !== window.location.href + '#' && !this.href.endsWith('#');
             
             if (this.classList.contains('facebook')) {
-                // Facebook - prevent and show message
                 e.preventDefault();
                 alert('Facebook login belum diimplementasikan');
             } else if (!hasValidHref) {
-                // No valid href - prevent and show message
                 e.preventDefault();
                 alert('Social login belum dikonfigurasi');
             }
-            // Untuk Google, biarkan redirect natural
         });
     });
-
 
     // Input Animation on Focus
     document.querySelectorAll('.form-input').forEach(input => {
@@ -1223,11 +1198,10 @@
         });
     });
 
-    // Disable form resubmission on page refresh (praktik baik di Laravel/PHP)
+    // Disable form resubmission on page refresh
     if (window.history.replaceState) {
         window.history.replaceState(null, null, window.location.href);
     }
-</script>
-
+    </script>
 </body>
 </html>
